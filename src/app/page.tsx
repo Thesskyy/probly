@@ -84,15 +84,7 @@ const SpreadsheetApp = () => {
 
   return (
     <main className="min-h-screen p-8">
-      <h1 className="text-2xl font-bold mb-4">Excel-like Spreadsheet</h1>
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">
-          Running in: {isElectron ? "Electron" : "Web"} mode
-        </p>
-        <p className="text-sm text-gray-600">
-          Electron API available: {electronAPIAvailable ? "Yes" : "No"}
-        </p>
-      </div>
+      <h1 className="text-2xl font-bold mb-4">Magic Spreadsheet</h1>
       <Spreadsheet onDataChange={setSpreadsheetData} />
       <ChatBox onSend={handleSend} />
     </main>

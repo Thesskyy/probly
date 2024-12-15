@@ -49,11 +49,7 @@ const ChatBox = ({ onSend }: ChatBoxProps) => {
   };
 
   return (
-    <div className="w-full max-w-4xl p-4 border rounded-lg shadow-sm bg-white">
-      {response && (
-        <div className="mb-4 p-3 rounded-lg bg-gray-100">{response}</div>
-      )}
-
+    <div className="w-full max-w-4xl p-4 border rounded-lg shadow-sm bg-gray-100 mt-4 border-gray-500">
       <div className="flex gap-2">
         <input
           type="text"

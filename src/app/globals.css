@@ -12,3 +12,7 @@ body {
     color: rgb(var(--foreground-rgb));
     background: rgb(var(--background-end-rgb));
 }
+
+@media (min-width: 0px) {
+  @import 'handsontable/dist/handsontable.full.min.css';
+}
