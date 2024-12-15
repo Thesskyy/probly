@@ -46,3 +46,9 @@ npm run electron-start
 - Jspreadsheet CE
 - Electron
 - OpenAI API
+
+
+## Development Roadmap
+- [ ] Add a chat history
+- [ ] Add visualizations / graphing
+- [ ] Add excel import / export
