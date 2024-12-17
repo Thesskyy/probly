@@ -2,9 +2,11 @@ export {};
 
 declare global {
   interface Window {
-    electron: {
-      invoke: (channel: string, data: any) => Promise<any>;
-      isElectron: boolean;
-    };
+    electron:
+      | {
+          invoke: (channel: string, data: any) => Promise<any>;
+          isElectron: boolean;
+        }
+      | undefined;
   }
 }
