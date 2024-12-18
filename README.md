@@ -55,5 +55,7 @@ npm run electron-start
 - [ ] Try to respect formatting on import
 - [ ] Add an accept / reject button on the chat response prior to applying it to the spreadsheet
 - [ ] Other kinds of operations (hide rows where, hide columns where, sort table by attribute, etc.)
-- [ ] Support for multiple sheets
+- [ ] Support for multiple sheets (or select sheet to use on import)
 - [ ] Make more of the top toolbar buttons work (first check out of the box hands on table functionality)
+- [ ] Keybindings / hotkeys
+- [ ] Hide chat window with expand / collapse button
