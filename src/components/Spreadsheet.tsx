@@ -47,7 +47,7 @@ const Spreadsheet = ({ onDataChange, initialData }: SpreadsheetProps) => {
         setCurrentData(data);
         hotInstanceRef.current.updateSettings({ data }, false);
         if (onDataChange) {
-          onDataChange(data.slice(0, 5));
+          onDataChange(data);
         }
       }
     } catch (error) {

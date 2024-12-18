@@ -6,11 +6,21 @@ const openai = new OpenAI({
 
 function formatSpreadsheetData(data) {
   if (!data || !Array.isArray(data)) return "";
+
+  const getColumnRef = (index) => {
+    let columnRef = '';
+    while (index >= 0) {
+      columnRef = String.fromCharCode((index % 26) + 65) + columnRef;
+      index = Math.floor(index / 26) - 1;
+    }
+    return columnRef;
+  };
+
   return data.reduce((acc, row, rowIndex) => {
     return (
       acc +
       row.reduce((rowAcc, cell, colIndex) => {
-        const cellRef = `${String.fromCharCode(65 + colIndex)}${rowIndex + 1}`;
+        const cellRef = `${getColumnRef(colIndex)}${rowIndex + 1}`;
         return rowAcc + `<${cellRef}>${cell}</${cellRef}>`;
       }, "") +
       "\n"
@@ -19,11 +29,12 @@ function formatSpreadsheetData(data) {
 }
 
 async function handleLLMRequest(message, spreadsheetData) {
-  console.log("Handling LLM request:", { message, spreadsheetData });
   try {
     const spreadsheetContext = spreadsheetData?.length
       ? `Current spreadsheet data:\n${formatSpreadsheetData(spreadsheetData)}\n`
       : "";
+
+    console.log("Spreadsheet context:", spreadsheetContext);
 
     const completion = await openai.chat.completions.create({
       messages: [
