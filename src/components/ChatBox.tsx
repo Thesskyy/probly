@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CellUpdate } from "@/types/api";
+import { Send, Trash2, Loader2 } from "lucide-react";
 
 interface ChatMessage {
   id: string;
@@ -21,7 +22,6 @@ const ChatBox = ({ onSend, chatHistory, clearHistory }: ChatBoxProps) => {
   const handleSend = async () => {
     if (message.trim()) {
       setIsLoading(true);
-
       try {
         await onSend(message);
       } catch (error) {
@@ -40,59 +40,81 @@ const ChatBox = ({ onSend, chatHistory, clearHistory }: ChatBoxProps) => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] bg-white rounded-lg shadow-sm border">
-      {/* Chat Header */}
-      <div className="p-4 border-b flex justify-between items-center">
-        <h2 className="font-semibold text-gray-800">Chat History</h2>
+    <div className="flex flex-col h-full bg-white rounded-lg shadow-lg border border-gray-200">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center bg-white rounded-t-lg z-50">
+        <div>
+          <h2 className="font-semibold text-gray-800">AI Assistant</h2>
+          <p className="text-xs text-gray-500">
+            Ask me about spreadsheet formulas
+          </p>
+        </div>
         <button
           onClick={clearHistory}
-          className="text-sm px-2 py-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+          className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+          title="Clear chat history"
         >
-          Clear History
+          <Trash2 size={18} />
         </button>
       </div>
 
       {/* Chat History */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {chatHistory.map((chat) => (
-          <div key={chat.id} className="space-y-2">
-            <div className="flex items-start gap-2">
-              <div className="bg-blue-50 rounded-lg p-3 max-w-[80%]">
-                <p className="text-sm text-gray-800">{chat.text}</p>
-                <span className="text-xs text-gray-500">
-                  {new Date(chat.timestamp).toLocaleTimeString()}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-start gap-2 justify-end">
-              <div className="bg-gray-50 rounded-lg p-3 max-w-[80%]">
-                <pre className="text-sm text-gray-800 whitespace-pre-wrap">
-                  {chat.response}
-                </pre>
-              </div>
-            </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+        {chatHistory.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-2">
+            <p className="text-sm">No messages yet</p>
+            <p className="text-xs text-center">
+              Try asking me to create formulas or analyze your data
+            </p>
           </div>
-        ))}
+        ) : (
+          chatHistory.map((chat) => (
+            <div key={chat.id} className="space-y-2">
+              {/* User Message */}
+              <div className="flex justify-end">
+                <div className="bg-blue-500 text-white rounded-2xl rounded-tr-sm px-4 py-2 max-w-[80%] shadow-sm">
+                  <p className="text-sm">{chat.text}</p>
+                  <span className="text-xs opacity-75 mt-1 block">
+                    {new Date(chat.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+              </div>
+              {/* AI Response */}
+              <div className="flex justify-start">
+                <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-2 max-w-[80%] shadow-sm border border-gray-200">
+                  <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
+                    {chat.response}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t">
-        <div className="flex gap-2">
+      <div className="p-4 bg-white border-t border-gray-200 rounded-b-lg">
+        <div className="flex gap-2 items-center">
           <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Ask the LLM to create a formula..."
+            className="flex-1 px-4 py-2 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            placeholder="Type your message..."
             disabled={isLoading}
           />
           <button
             onClick={handleSend}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400"
-            disabled={isLoading}
+            disabled={isLoading || !message.trim()}
+            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            title="Send message"
           >
-            {isLoading ? "..." : "Send"}
+            {isLoading ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <Send size={20} />
+            )}
           </button>
         </div>
       </div>

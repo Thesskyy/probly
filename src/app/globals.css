@@ -36,3 +36,14 @@ body {
 .chat-message-container::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+.handsontable {
+    z-index: 1 !important;
+}
+
+.handsontable .wtHolder {
+    z-index: 1 !important;
+}
+
+.handsontable .htCore {
+    z-index: 1 !important;
+}

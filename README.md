@@ -57,5 +57,5 @@ npm run electron-start
 - [ ] Other kinds of operations (hide rows where, hide columns where, sort table by attribute, etc.)
 - [ ] Support for multiple sheets (or select sheet to use on import)
 - [ ] Make more of the top toolbar buttons work (first check out of the box hands on table functionality)
-- [ ] Keybindings / hotkeys
-- [ ] Hide chat window with expand / collapse button
+- [] Keybindings / hotkeys
+- [x] Hide chat window with expand / collapse button

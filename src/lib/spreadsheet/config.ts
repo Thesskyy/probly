@@ -11,7 +11,7 @@ export const getInitialConfig = (data: any[][]): GridSettings => {
     rowHeaders: true,
     colHeaders: true,
     width: "100%",
-    height: "70vh",
+    height: "100%",
     licenseKey: "non-commercial-and-evaluation",
     formulas: {
       engine: hyperformulaInstance,
@@ -36,5 +36,7 @@ export const getInitialConfig = (data: any[][]): GridSettings => {
       const cellProperties: any = {};
       return cellProperties;
     },
+    observeDomVisibility: true,
+    observeChanges: true,
   };
 };

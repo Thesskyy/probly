@@ -7,11 +7,12 @@ import {
   SpreadsheetProvider,
   useSpreadsheet,
 } from "@/context/SpreadsheetContext";
+import { MessageCircle } from "lucide-react";
 
 const Spreadsheet = dynamic(() => import("@/components/Spreadsheet"), {
   ssr: false,
   loading: () => (
-    <div className="flex-1 h-[70vh] flex items-center justify-center bg-gray-50 border rounded-lg">
+    <div className="flex-1 h-full flex items-center justify-center bg-gray-50 border rounded-lg">
       <div className="text-gray-500">Loading spreadsheet...</div>
     </div>
   ),
@@ -30,8 +31,33 @@ const SpreadsheetApp = () => {
   const [isElectron, setIsElectron] = useState(false);
   const [electronAPIAvailable, setElectronAPIAvailable] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // Load chat history from localStorage on mount
+  // Keyboard shortcut handler
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === "?") {
+        setIsChatOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, []);
+
+  // Load chat state
+  useEffect(() => {
+    const savedState = localStorage.getItem("chatOpen");
+    if (savedState) {
+      setIsChatOpen(JSON.parse(savedState));
+    }
+  }, []);
+
+  // Save chat state
+  useEffect(() => {
+    localStorage.setItem("chatOpen", JSON.stringify(isChatOpen));
+  }, [isChatOpen]);
+
+  // Load chat history
   useEffect(() => {
     const savedHistory = localStorage.getItem("chatHistory");
     if (savedHistory) {
@@ -50,13 +76,13 @@ const SpreadsheetApp = () => {
     }
   }, []);
 
-  // Save chat history to localStorage when it changes
+  // Save chat history
   useEffect(() => {
     localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
   }, [chatHistory]);
 
+  // Check Electron availability
   useEffect(() => {
-    // Check for Electron API availability after component mounts
     const checkElectronAvailability = () => {
       const hasElectronAPI = typeof window !== "undefined" && !!window.electron;
       setElectronAPIAvailable(hasElectronAPI);
@@ -65,7 +91,7 @@ const SpreadsheetApp = () => {
       if (hasElectronAPI) {
         console.log("Electron environment detected!");
         window.electron
-          .invoke("test-connection", { test: true })
+          ?.invoke("test-connection", { test: true })
           .then((result) => console.log("Electron test successful:", result))
           .catch((err) => console.error("Electron test failed:", err));
       } else {
@@ -81,7 +107,6 @@ const SpreadsheetApp = () => {
       isElectron,
       hasElectronAPI: electronAPIAvailable,
     });
-
     try {
       let updates;
 
@@ -153,16 +178,26 @@ const SpreadsheetApp = () => {
   };
 
   return (
-    <main className="min-h-screen p-8 bg-gray-50">
-      <div className="max-w-[1800px] mx-auto">
+    <main className="h-screen w-screen bg-gray-50 overflow-hidden">
+      <div className="h-full p-4 flex flex-col">
         <h1 className="text-2xl font-bold mb-4 text-gray-800">
           Magic Spreadsheet
         </h1>
-        <div className="flex gap-4">
-          <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="flex gap-4 flex-1 relative">
+          <div className="flex-1 bg-white rounded-lg shadow-sm">
             <Spreadsheet onDataChange={handleDataChange} />
           </div>
-          <div className="w-96">
+          {/* Updated ChatBox container */}
+          <div
+            className={`fixed right-4 top-[5.5rem] bottom-4 w-96 transition-transform duration-300 transform ${
+              isChatOpen ? "translate-x-0" : "translate-x-full"
+            }`}
+            style={{
+              backgroundColor: "white",
+              boxShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
+              zIndex: 9999,
+            }}
+          >
             <ChatBox
               onSend={handleSend}
               chatHistory={chatHistory}
@@ -171,6 +206,13 @@ const SpreadsheetApp = () => {
           </div>
         </div>
       </div>
+      <button
+        onClick={() => setIsChatOpen((prev) => !prev)}
+        className="fixed bottom-4 right-4 p-3 rounded-full shadow-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors z-50"
+        title="Toggle Chat (Ctrl+Shift+/)"
+      >
+        <MessageCircle size={24} />
+      </button>
     </main>
   );
 };

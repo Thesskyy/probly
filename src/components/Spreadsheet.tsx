@@ -128,6 +128,15 @@ const Spreadsheet = ({ onDataChange, initialData }: SpreadsheetProps) => {
   useEffect(() => {
     if (spreadsheetRef.current && !hotInstanceRef.current) {
       try {
+        const config = getInitialConfig(currentData);
+        config.afterChange = (changes: any) => {
+          if (changes) {
+            const currentData = hotInstanceRef.current?.getData();
+            if (currentData && onDataChange) {
+              onDataChange(currentData);
+            }
+          }
+        };
         hotInstanceRef.current = new Handsontable(
           spreadsheetRef.current,
           getInitialConfig(currentData),
@@ -152,7 +161,7 @@ const Spreadsheet = ({ onDataChange, initialData }: SpreadsheetProps) => {
   }, [currentData]);
 
   return (
-    <div className="flex flex-col w-full h-full bg-white">
+    <div className="h-full flex flex-col">
       <SpreadsheetToolbar
         onImport={handleImport}
         onExport={handleExport}
@@ -205,7 +214,7 @@ const Spreadsheet = ({ onDataChange, initialData }: SpreadsheetProps) => {
         onSearch={() => setShowSearch(true)}
         onSort={() => dataHandlers.handleSort(hotInstanceRef.current)}
       />
-      <div className="relative flex-1 min-h-0">
+      <div className="relative flex-1">
         {showSearch && (
           <SearchBox
             onSearch={handleSearch}
