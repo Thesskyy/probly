@@ -1,21 +1,22 @@
 import { useState } from "react";
-import { CellUpdate } from "@/types/api";
-import { Send, Trash2, Loader2 } from "lucide-react";
-
-interface ChatMessage {
-  id: string;
-  text: string;
-  response: string;
-  timestamp: Date;
-}
+import { CellUpdate, ChatMessage } from "@/types/api";
+import { Check, X, Send, Trash2, Loader2 } from "lucide-react";
 
 interface ChatBoxProps {
   onSend: (message: string) => Promise<CellUpdate[]>;
+  onAccept: (updates: CellUpdate[], messageId: string) => void;
+  onReject: (messageId: string) => void;
   chatHistory: ChatMessage[];
   clearHistory: () => void;
 }
 
-const ChatBox = ({ onSend, chatHistory, clearHistory }: ChatBoxProps) => {
+const ChatBox = ({
+  onSend,
+  onAccept,
+  onReject,
+  chatHistory,
+  clearHistory,
+}: ChatBoxProps) => {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -23,7 +24,7 @@ const ChatBox = ({ onSend, chatHistory, clearHistory }: ChatBoxProps) => {
     if (message.trim()) {
       setIsLoading(true);
       try {
-        await onSend(message);
+        const updates = await onSend(message);
       } catch (error) {
         console.error("Error details:", error);
       } finally {
@@ -85,6 +86,39 @@ const ChatBox = ({ onSend, chatHistory, clearHistory }: ChatBoxProps) => {
                   <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
                     {chat.response}
                   </pre>
+                  {/* Accept/Reject Buttons */}
+                  {chat.status === "pending" && chat.updates && (
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => onAccept(chat.updates!, chat.id)}
+                        className="px-3 py-1 bg-green-500 text-white rounded-full text-sm flex items-center gap-1 hover:bg-green-600 transition-colors"
+                      >
+                        <Check size={14} />
+                        Apply
+                      </button>
+                      <button
+                        onClick={() => onReject(chat.id)}
+                        className="px-3 py-1 bg-red-500 text-white rounded-full text-sm flex items-center gap-1 hover:bg-red-600 transition-colors"
+                      >
+                        <X size={14} />
+                        Reject
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Status Indicator */}
+                  {chat.status === "accepted" && (
+                    <div className="mt-2 text-green-500 text-xs flex items-center gap-1">
+                      <Check size={14} />
+                      Applied
+                    </div>
+                  )}
+                  {chat.status === "rejected" && (
+                    <div className="mt-2 text-red-500 text-xs flex items-center gap-1">
+                      <X size={14} />
+                      Rejected
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

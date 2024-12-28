@@ -1,5 +1,5 @@
 "use client";
-
+import { X, Minus, Maximize2, MessageCircle } from "lucide-react";
 import dynamic from "next/dynamic";
 import ChatBox from "@/components/ChatBox";
 import { useState, useEffect } from "react";
@@ -7,8 +7,7 @@ import {
   SpreadsheetProvider,
   useSpreadsheet,
 } from "@/context/SpreadsheetContext";
-import { MessageCircle } from "lucide-react";
-
+import { CellUpdate, ChatMessage } from "@/types/api";
 const Spreadsheet = dynamic(() => import("@/components/Spreadsheet"), {
   ssr: false,
   loading: () => (
@@ -17,13 +16,6 @@ const Spreadsheet = dynamic(() => import("@/components/Spreadsheet"), {
     </div>
   ),
 });
-
-interface ChatMessage {
-  id: string;
-  text: string;
-  response: string;
-  timestamp: Date;
-}
 
 const SpreadsheetApp = () => {
   const [spreadsheetData, setSpreadsheetData] = useState<any[][]>([]);
@@ -103,10 +95,6 @@ const SpreadsheetApp = () => {
   }, []);
 
   const handleSend = async (message: string) => {
-    console.log("Environment check:", {
-      isElectron,
-      hasElectronAPI: electronAPIAvailable,
-    });
     try {
       let updates;
 
@@ -133,25 +121,22 @@ const SpreadsheetApp = () => {
         updates = await response.json();
       }
 
-      console.log("Received updates:", updates);
+      const formattedResponse = Array.isArray(updates)
+        ? updates
+            .map((update) => `${update.target}: ${update.formula}`)
+            .join("\n")
+        : "No updates available";
 
-      if (Array.isArray(updates)) {
-        setFormulas(updates);
+      const newMessage: ChatMessage = {
+        id: Date.now().toString(),
+        text: message,
+        response: formattedResponse,
+        timestamp: new Date(),
+        status: "pending",
+        updates: updates,
+      };
 
-        const formattedResponse = updates
-          .map((update) => `${update.target}: ${update.formula}`)
-          .join("\n");
-
-        const newMessage: ChatMessage = {
-          id: Date.now().toString(),
-          text: message,
-          response: formattedResponse,
-          timestamp: new Date(),
-        };
-
-        setChatHistory((prev) => [...prev, newMessage]);
-      }
-
+      setChatHistory((prev) => [...prev, newMessage]);
       return updates;
     } catch (error) {
       console.error("Error in handleSend:", error);
@@ -168,6 +153,21 @@ const SpreadsheetApp = () => {
     }
   };
 
+  const handleAccept = (updates: CellUpdate[], messageId: string) => {
+    setFormulas(updates);
+    setChatHistory((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId ? { ...msg, status: "accepted" } : msg,
+      ),
+    );
+  };
+  const handleReject = (messageId: string) => {
+    setChatHistory((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId ? { ...msg, status: "rejected" } : msg,
+      ),
+    );
+  };
   const handleClearHistory = () => {
     setChatHistory([]);
     localStorage.removeItem("chatHistory");
@@ -178,18 +178,33 @@ const SpreadsheetApp = () => {
   };
 
   return (
-    <main className="h-screen w-screen bg-gray-50 overflow-hidden">
-      <div className="h-full p-4 flex flex-col">
-        <h1 className="text-2xl font-bold mb-4 text-gray-800">
+    <main className="h-screen w-screen flex flex-col bg-gray-50">
+      {/* Header Bar */}
+      <div className="h-10 border-b border-gray-200 bg-white flex items-center justify-between px-4">
+        <div className="text-sm font-medium text-gray-600">
           Magic Spreadsheet
-        </h1>
-        <div className="flex gap-4 flex-1 relative">
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="p-1.5 hover:bg-gray-100 rounded">
+            <Minus size={16} />
+          </button>
+          <button className="p-1.5 hover:bg-gray-100 rounded">
+            <Maximize2 size={16} />
+          </button>
+          <button className="p-1.5 hover:bg-gray-100 rounded text-red-500">
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-4 overflow-hidden">
+        <div className="flex gap-4 h-full relative">
           <div className="flex-1 bg-white rounded-lg shadow-sm">
             <Spreadsheet onDataChange={handleDataChange} />
           </div>
-          {/* Updated ChatBox container */}
           <div
-            className={`fixed right-4 top-[5.5rem] bottom-4 w-96 transition-transform duration-300 transform ${
+            className={`fixed right-4 top-[5.5rem] bottom-16 w-96 transition-transform duration-300 transform ${
               isChatOpen ? "translate-x-0" : "translate-x-full"
             }`}
             style={{
@@ -202,17 +217,26 @@ const SpreadsheetApp = () => {
               onSend={handleSend}
               chatHistory={chatHistory}
               clearHistory={handleClearHistory}
+              onAccept={handleAccept}
+              onReject={handleReject}
             />
           </div>
         </div>
       </div>
-      <button
-        onClick={() => setIsChatOpen((prev) => !prev)}
-        className="fixed bottom-4 right-4 p-3 rounded-full shadow-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors z-50"
-        title="Toggle Chat (Ctrl+Shift+/)"
-      >
-        <MessageCircle size={24} />
-      </button>
+
+      {/* Footer Bar */}
+      <div className="h-12 border-t border-gray-200 bg-white flex items-center justify-between px-4">
+        <div className="flex items-center gap-2">
+          {/* Add other footer tools here */}
+        </div>
+        <button
+          onClick={() => setIsChatOpen((prev) => !prev)}
+          className="p-2 rounded hover:bg-gray-100 transition-colors"
+          title="Toggle Chat (Ctrl+Shift+/)"
+        >
+          <MessageCircle size={20} />
+        </button>
+      </div>
     </main>
   );
 };

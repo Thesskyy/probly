@@ -7,6 +7,7 @@ import SpreadsheetToolbar from "./SpreadsheetToolbar";
 import SearchBox from "./SearchBox";
 import { getInitialConfig } from "@/lib/spreadsheet/config";
 import { excelCellToRowCol, readFileData } from "@/lib/spreadsheet/utils";
+import { importSpreadsheet } from "@/lib/spreadsheet/import";
 import {
   textFormattingHandlers,
   editHandlers,
@@ -42,20 +43,36 @@ const Spreadsheet = ({ onDataChange, initialData }: SpreadsheetProps) => {
 
   const handleImport = async (file: File) => {
     try {
-      const data = await readFileData(file);
-      if (hotInstanceRef.current && data) {
-        setCurrentData(data);
-        hotInstanceRef.current.updateSettings({ data }, false);
+      const { data, styles, mergedCells } = await importSpreadsheet(file);
+
+      if (hotInstanceRef.current) {
+        hotInstanceRef.current.updateSettings(
+          {
+            data,
+            cells: function (row, col) {
+              return {
+                className: [
+                  styles.bold[row]?.[col] ? "htBold" : "",
+                  `ht${styles.alignment[row]?.[col]?.charAt(0).toUpperCase()}${styles.alignment[row]?.[col]?.slice(1)}`, // htLeft, htCenter, htRight
+                ]
+                  .filter(Boolean)
+                  .join(" "),
+              };
+            },
+            mergeCells: mergedCells,
+          },
+          false,
+        );
+
         if (onDataChange) {
           onDataChange(data);
         }
       }
     } catch (error) {
-      console.error("Error importing file:", error);
+      console.error("Error importing spreadsheet:", error);
       alert("Error importing file. Please try again.");
     }
   };
-
   const handleExport = () => {
     try {
       if (hotInstanceRef.current) {
