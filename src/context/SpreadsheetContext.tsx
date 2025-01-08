@@ -6,6 +6,7 @@ interface SpreadsheetContextType {
   setFormulas: (updates: CellUpdate[]) => void;
   formulaQueue: Map<string, string>;
   clearFormula: (target: string) => void;
+  setChartData: (chartData: any) => void;
 }
 
 const SpreadsheetContext = createContext<SpreadsheetContextType | undefined>(
@@ -53,6 +54,14 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const setChartData = (chartData: any) => {
+    setFormulaQueue((prev) => {
+      const next = new Map(prev);
+      next.set("chart", JSON.stringify(chartData));
+      return next;
+    });
+  };
+
   return (
     <SpreadsheetContext.Provider
       value={{
@@ -60,6 +69,7 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
         setFormulas,
         formulaQueue,
         clearFormula,
+        setChartData,
       }}
     >
       {children}
