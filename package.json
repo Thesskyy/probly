@@ -2,15 +2,11 @@
   "name": "excel-ai",
   "version": "0.1.0",
   "private": true,
-  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "electron-dev": "cross-env NODE_ENV=development concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron": "electron .",
-    "package": "next build && electron-builder"
+    "lint": "next lint"
   },
   "dependencies": {
     "@types/node": "20.11.17",
@@ -18,6 +14,7 @@
     "@types/react-dom": "18.2.19",
     "autoprefixer": "10.4.17",
     "dotenv": "^16.4.1",
+    "echarts-for-react": "^3.0.2",
     "handsontable": "^13.1.0",
     "lucide-react": "^0.468.0",
     "next": "^14.2.20",
@@ -31,43 +28,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@types/jspreadsheet-ce": "^4.7.8",
-    "concurrently": "^8.2.2",
-    "cross-env": "^7.0.3",
-    "electron": "^28.2.1",
-    "electron-builder": "^24.9.1",
     "eslint": "8.56.0",
-    "eslint-config-next": "14.1.0",
-    "wait-on": "^7.2.0"
-  },
-  "build": {
-    "appId": "com.excel-ai.app",
-    "productName": "Excel AI",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "electron/**/*",
-      "out/**/*",
-      "package.json"
-    ],
-    "linux": {
-      "target": [
-        "AppImage"
-      ],
-      "category": "Office"
-    },
-    "mac": {
-      "target": [
-        "dmg"
-      ],
-      "category": "public.app-category.productivity"
-    },
-    "win": {
-      "target": [
-        "nsis"
-      ],
-      "icon": "build/icon.ico"
-    }
+    "eslint-config-next": "14.1.0"
   }
 }

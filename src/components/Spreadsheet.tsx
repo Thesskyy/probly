@@ -8,20 +8,13 @@ import {
 import Handsontable from "handsontable";
 import "handsontable/dist/handsontable.full.min.css";
 import { useSpreadsheet } from "@/context/SpreadsheetContext";
-import * as XLSX from "xlsx";
-import SpreadsheetToolbar from "./SpreadsheetToolbar";
-import SearchBox from "./SearchBox";
 import { getInitialConfig } from "@/lib/spreadsheet/config";
 import { excelCellToRowCol } from "@/lib/spreadsheet/utils";
-import { importSpreadsheet } from "@/lib/spreadsheet/import";
-import {
-  textFormattingHandlers,
-  editHandlers,
-  tableHandlers,
-  cellHandlers,
-  dataHandlers,
-} from "@/lib/handlers";
+import SpreadsheetToolbar from "./SpreadsheetToolbar";
 import SpreadsheetEChart from "./SpreadsheetEChart";
+import { fileImport } from "@/lib/file/import";
+import { fileExport } from "@/lib/file/export";
+import * as XLSX from "xlsx";
 
 interface SpreadsheetProps {
   onDataChange?: (data: any[][]) => void;
@@ -31,12 +24,6 @@ interface SpreadsheetProps {
 export interface SpreadsheetRef {
   handleImport: (file: File) => Promise<void>;
   handleExport: () => void;
-}
-
-interface SearchResult {
-  row: number;
-  col: number;
-  value: string;
 }
 
 const Spreadsheet = forwardRef<SpreadsheetRef, SpreadsheetProps>(
@@ -51,30 +38,22 @@ const Spreadsheet = forwardRef<SpreadsheetRef, SpreadsheetProps>(
       ],
     );
     const [showChart, setShowChart] = useState(false);
-    const [showSearch, setShowSearch] = useState(false);
-    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-    const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
     const [chartData, setChartData] = useState<any | null>(null);
 
     const handleImport = async (file: File) => {
+      if (!file) return;
       try {
-        const { data, styles, mergedCells } = await importSpreadsheet(file);
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-        if (hotInstanceRef.current) {
+        if (hotInstanceRef.current && worksheet) {
+          const data = XLSX.utils.sheet_to_json(worksheet, {
+            header: 1,
+          }) as any[][];
           hotInstanceRef.current.updateSettings(
             {
               data,
-              cells: function (row, col) {
-                return {
-                  className: [
-                    styles.bold[row]?.[col] ? "htBold" : "",
-                    `ht${styles.alignment[row]?.[col]?.charAt(0).toUpperCase()}${styles.alignment[row]?.[col]?.slice(1)}`,
-                  ]
-                    .filter(Boolean)
-                    .join(" "),
-                };
-              },
-              mergeCells: mergedCells,
             },
             false,
           );
@@ -89,61 +68,15 @@ const Spreadsheet = forwardRef<SpreadsheetRef, SpreadsheetProps>(
       }
     };
 
-    const handleExport = () => {
+    const handleExport = async () => {
       try {
         if (hotInstanceRef.current) {
           const data = hotInstanceRef.current.getData();
-          const ws = XLSX.utils.aoa_to_sheet(data);
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-          XLSX.writeFile(wb, "spreadsheet_export.xlsx");
+          await fileExport(data);
         }
       } catch (error) {
-        console.error("Error exporting file:", error);
+        console.error("Error exporting spreadsheet:", error);
         alert("Error exporting file. Please try again.");
-      }
-    };
-
-    const handleSearch = (query: string) => {
-      if (hotInstanceRef.current) {
-        const results = dataHandlers.handleSearch(
-          hotInstanceRef.current,
-          query,
-        );
-        setSearchResults(results);
-        setCurrentSearchIndex(0);
-
-        if (results.length > 0) {
-          dataHandlers.highlightSearchResult(
-            hotInstanceRef.current,
-            results[0],
-          );
-        }
-      }
-    };
-
-    const handleNextSearch = () => {
-      if (searchResults.length > 0) {
-        const nextIndex = (currentSearchIndex + 1) % searchResults.length;
-        setCurrentSearchIndex(nextIndex);
-        dataHandlers.highlightSearchResult(
-          hotInstanceRef.current,
-          searchResults[nextIndex],
-        );
-      }
-    };
-
-    const handlePreviousSearch = () => {
-      if (searchResults.length > 0) {
-        const prevIndex =
-          currentSearchIndex === 0
-            ? searchResults.length - 1
-            : currentSearchIndex - 1;
-        setCurrentSearchIndex(prevIndex);
-        dataHandlers.highlightSearchResult(
-          hotInstanceRef.current,
-          searchResults[prevIndex],
-        );
       }
     };
 
@@ -232,106 +165,13 @@ const Spreadsheet = forwardRef<SpreadsheetRef, SpreadsheetProps>(
       <div className="h-full flex flex-col">
         <SpreadsheetToolbar
           onImport={async () => {
-            if (window.electron) {
-              try {
-                const result = await window.electron.invoke("show-open-dialog");
-
-                if (!result.canceled && result.filePaths.length > 0) {
-                  const filePath = result.filePaths[0];
-                  const buffer = await window.electron.invoke(
-                    "read-file",
-                    filePath,
-                  );
-
-                  // Create a more detailed file object
-                  const fileName = filePath.split("/").pop() || "spreadsheet";
-                  const fileType =
-                    fileName.split(".").pop()?.toLowerCase() || "";
-                  let mimeType = "application/octet-stream";
-
-                  if (fileType === "xlsx" || fileType === "xls") {
-                    mimeType =
-                      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                  } else if (fileType === "csv") {
-                    mimeType = "text/csv";
-                  }
-
-                  const file = new File([new Uint8Array(buffer)], fileName, {
-                    type: mimeType,
-                  });
-                  await handleImport(file);
-                }
-              } catch (error) {
-                console.error("Error opening file dialog:", error);
-                alert("Error importing file. Please try again.");
+            fileImport().then((file: any) => {
+              if (file) {
+                handleImport(file);
               }
-            }
+            });
           }}
-          onExport={() => {
-            if (window.electron) {
-              window.electron
-                .invoke("show-save-dialog")
-                .then((result) => {
-                  if (!result.canceled && result.filePath) {
-                    handleExport();
-                  }
-                })
-                .catch((error) => {
-                  console.error("Error saving file:", error);
-                  alert("Error exporting file. Please try again.");
-                });
-            }
-          }}
-          onUndo={() => editHandlers.handleUndo(hotInstanceRef.current)}
-          onRedo={() => editHandlers.handleRedo(hotInstanceRef.current)}
-          onCut={editHandlers.handleCut}
-          onCopy={editHandlers.handleCopy}
-          onPaste={editHandlers.handlePaste}
-          onBold={() =>
-            textFormattingHandlers.handleBold(hotInstanceRef.current)
-          }
-          onItalic={() =>
-            textFormattingHandlers.handleItalic(hotInstanceRef.current)
-          }
-          onUnderline={() =>
-            textFormattingHandlers.handleUnderline(hotInstanceRef.current)
-          }
-          onAlignLeft={() =>
-            textFormattingHandlers.handleAlignment(
-              hotInstanceRef.current,
-              "htLeft",
-            )
-          }
-          onAlignCenter={() =>
-            textFormattingHandlers.handleAlignment(
-              hotInstanceRef.current,
-              "htCenter",
-            )
-          }
-          onAlignRight={() =>
-            textFormattingHandlers.handleAlignment(
-              hotInstanceRef.current,
-              "htRight",
-            )
-          }
-          onAddRow={() => tableHandlers.handleAddRow(hotInstanceRef.current)}
-          onAddColumn={() =>
-            tableHandlers.handleAddColumn(hotInstanceRef.current)
-          }
-          onDeleteRow={() =>
-            tableHandlers.handleDeleteRow(hotInstanceRef.current)
-          }
-          onDeleteColumn={() =>
-            tableHandlers.handleDeleteColumn(hotInstanceRef.current)
-          }
-          onMergeCells={() =>
-            cellHandlers.handleMergeCells(hotInstanceRef.current)
-          }
-          onUnmergeCells={() =>
-            cellHandlers.handleUnmergeCells(hotInstanceRef.current)
-          }
-          onSearch={() => setShowSearch(true)}
-          onSort={() => dataHandlers.handleSort(hotInstanceRef.current)}
+          onExport={handleExport}
           onChart={() => setShowChart((prev) => !prev)}
         />
         <div className="relative flex-1">
@@ -349,16 +189,6 @@ const Spreadsheet = forwardRef<SpreadsheetRef, SpreadsheetProps>(
                 Close Chart
               </button>
             </div>
-          )}
-          {showSearch && (
-            <SearchBox
-              onSearch={handleSearch}
-              onNext={handleNextSearch}
-              onPrevious={handlePreviousSearch}
-              onClose={() => setShowSearch(false)}
-              resultsCount={searchResults.length}
-              currentResult={currentSearchIndex}
-            />
           )}
           <div ref={spreadsheetRef} className="w-full h-full" />
         </div>

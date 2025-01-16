@@ -1,5 +1,5 @@
 "use client";
-import { X, Minus, Maximize2, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import dynamic from "next/dynamic";
 import ChatBox from "@/components/ChatBox";
 import { useState, useEffect, useRef } from "react";
@@ -9,8 +9,9 @@ import {
 } from "@/context/SpreadsheetContext";
 import { CellUpdate, ChatMessage } from "@/types/api";
 import type { SpreadsheetRef } from "@/components/Spreadsheet";
-import SpreadsheetToolbar from "@/components/SpreadsheetToolbar";
 import path from "path";
+import { fileImport } from "@/lib/file/import";
+import { fileExport } from "@/lib/file/export";
 
 const Spreadsheet = dynamic(() => import("@/components/Spreadsheet"), {
   ssr: false,
@@ -24,61 +25,9 @@ const Spreadsheet = dynamic(() => import("@/components/Spreadsheet"), {
 const SpreadsheetApp = () => {
   const [spreadsheetData, setSpreadsheetData] = useState<any[][]>([]);
   const { setFormulas, setChartData } = useSpreadsheet();
-  const [isElectron, setIsElectron] = useState(false);
-  const [electronAPIAvailable, setElectronAPIAvailable] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const spreadsheetRef = useRef<SpreadsheetRef>(null);
-
-  // Check for Electron environment and set up file handling
-  useEffect(() => {
-    if (window.electron) {
-      const handleImport = async (filePath: string) => {
-        try {
-          console.log("Attempting to import file:", filePath);
-          const buffer = await window.electron.invoke("read-file", filePath);
-          console.log("File read successfully, creating File object...");
-
-          // Create a more detailed file object
-          const fileName = filePath.split("/").pop() || "spreadsheet";
-          const fileType = fileName.split(".").pop()?.toLowerCase() || "";
-          let mimeType = "application/octet-stream";
-
-          if (fileType === "xlsx" || fileType === "xls") {
-            mimeType =
-              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-          } else if (fileType === "csv") {
-            mimeType = "text/csv";
-          }
-
-          const file = new File([new Uint8Array(buffer)], fileName, {
-            type: mimeType,
-          });
-
-          console.log("Importing file...");
-          await spreadsheetRef.current?.handleImport(file);
-          console.log("Import completed successfully");
-        } catch (error) {
-          console.error("Error importing file:", error);
-        }
-      };
-
-      const handleExport = () => {
-        spreadsheetRef.current?.handleExport();
-      };
-
-      // Set up both listeners to cal the same import function
-      window.electron.onFileImported(handleImport);
-      window.electron.on("menu:import", handleImport);
-      window.electron.on("menu:export", handleExport);
-
-      return () => {
-        window.electron.removeListener("file-imported", handleImport);
-        window.electron.removeListener("menu:import", handleImport);
-        window.electron.removeListener("menu:export", handleExport);
-      };
-    }
-  }, []);
 
   // Keyboard shortcut for chat toggle
   useEffect(() => {
@@ -128,52 +77,22 @@ const SpreadsheetApp = () => {
     localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
   }, [chatHistory]);
 
-  // Check for Electron availability
-  useEffect(() => {
-    const checkElectronAvailability = () => {
-      const hasElectronAPI = typeof window !== "undefined" && !!window.electron;
-      setElectronAPIAvailable(hasElectronAPI);
-      setIsElectron(hasElectronAPI);
-
-      if (hasElectronAPI) {
-        console.log("Electron environment detected!");
-        window.electron
-          .invoke("test-connection", { test: true })
-          .then((result) => console.log("Electron test successful:", result))
-          .catch((err) => console.error("Electron test failed:", err));
-      } else {
-        console.log("Web environment detected");
-      }
-    };
-
-    checkElectronAvailability();
-  }, []);
-
   const handleSend = async (message: string) => {
     try {
-      let response;
-      if (isElectron && window?.electron) {
-        console.log("Using Electron IPC...");
-        response = await window.electron.invoke("llm-request", {
+      console.log("Using Web API...");
+      const fetchResponse = await fetch("/api/llm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           message,
           spreadsheetData,
-        });
-      } else {
-        console.log("Using Web API...");
-        const fetchResponse = await fetch("/api/llm", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message,
-            spreadsheetData,
-          }),
-        });
+        }),
+      });
 
-        if (!fetchResponse.ok) {
-          throw new Error(`HTTP error! status: ${fetchResponse.status}`);
-        }
-        response = await fetchResponse.json();
+      if (!fetchResponse.ok) {
+        throw new Error(`HTTP error! status: ${fetchResponse.status}`);
       }
+      const response = await fetchResponse.json();
       let updates, chartData;
       if (response.updates) {
         updates = response.updates;
@@ -245,18 +164,6 @@ const SpreadsheetApp = () => {
     setSpreadsheetData(data);
   };
 
-  const handleMinimize = () => {
-    window.electron?.invoke("minimize-window");
-  };
-
-  const handleMaximize = () => {
-    window.electron?.invoke("maximize-window");
-  };
-
-  const handleClose = () => {
-    window.electron?.invoke("close-window");
-  };
-
   return (
     <main className="h-screen w-screen flex flex-col bg-gray-50">
       {/* Title bar */}
@@ -264,26 +171,7 @@ const SpreadsheetApp = () => {
         <div className="text-sm font-medium text-gray-600">
           Magic Spreadsheet
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            className="p-1.5 hover:bg-gray-100 rounded"
-            onClick={handleMinimize}
-          >
-            <Minus size={16} />
-          </button>
-          <button
-            className="p-1.5 hover:bg-gray-100 rounded"
-            onClick={handleMaximize}
-          >
-            <Maximize2 size={16} />
-          </button>
-          <button
-            className="p-1.5 hover:bg-gray-100 rounded text-red-500"
-            onClick={handleClose}
-          >
-            <X size={16} />
-          </button>
-        </div>
+        <div className="flex items-center gap-2"></div>
       </div>
 
       {/* Main content */}

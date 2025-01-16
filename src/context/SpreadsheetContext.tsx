@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { CellUpdate } from "@/types/api";
+import { calculateCellValue } from "@/lib/spreadsheet/config";
 
 interface SpreadsheetContextType {
   setFormula: (target: string, formula: string) => void;
@@ -7,6 +8,9 @@ interface SpreadsheetContextType {
   formulaQueue: Map<string, string>;
   clearFormula: (target: string) => void;
   setChartData: (chartData: any) => void;
+  cellValues: Map<string, any>;
+  setCellValues: (updates: Map<string, any>) => void;
+  clearCellValues: (target: string) => void;
 }
 
 const SpreadsheetContext = createContext<SpreadsheetContextType | undefined>(
@@ -27,6 +31,21 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
   const [formulaQueue, setFormulaQueue] = useState<Map<string, string>>(
     new Map(),
   );
+  const [cellValues, setCellValuesState] = useState<Map<string, any>>(
+    new Map(),
+  );
+  const [evaluatedValues, setEvaluatedValues] = useState<Map<string, any>>(
+    new Map(),
+  );
+
+  useEffect(() => {
+    const nextEvaluatedValues = new Map(evaluatedValues);
+    formulaQueue.forEach((formula, target) => {
+      const calculatedValue = calculateCellValue(formula, target, cellValues);
+      nextEvaluatedValues.set(target, calculatedValue);
+    });
+    setEvaluatedValues(nextEvaluatedValues);
+  }, [formulaQueue, cellValues]);
 
   const setFormula = (target: string, formula: string) => {
     setFormulaQueue((prev) => {
@@ -62,6 +81,24 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const setCellValues = (updates: Map<string, any>) => {
+    setCellValuesState((prev) => {
+      const next = new Map(prev);
+      updates.forEach((value, key) => {
+        next.set(key, value);
+      });
+      return next;
+    });
+  };
+
+  const clearCellValues = (target: string) => {
+    setCellValuesState((prev) => {
+      const next = new Map(prev);
+      next.delete(target);
+      return next;
+    });
+  };
+
   return (
     <SpreadsheetContext.Provider
       value={{
@@ -70,6 +107,9 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
         formulaQueue,
         clearFormula,
         setChartData,
+        cellValues: evaluatedValues,
+        setCellValues,
+        clearCellValues,
       }}
     >
       {children}

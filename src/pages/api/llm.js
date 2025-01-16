@@ -110,6 +110,18 @@ async function handleLLMRequest(message, spreadsheetData) {
   }
 }
 
-module.exports = {
-  handleLLMRequest,
-};
+export default async function handler(req, res) {
+  if (req.method === "POST") {
+    try {
+      const { message, spreadsheetData } = req.body;
+      const result = await handleLLMRequest(message, spreadsheetData);
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("Error processing LLM request:", error);
+      res.status(500).json({ error: "Failed to process request" });
+    }
+  } else {
+    res.setHeader("Allow", ["POST"]);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+}
