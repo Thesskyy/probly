@@ -1,3 +1,49 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+    --foreground-rgb: 0, 0, 0;
+    --background-start-rgb: 214, 219, 220;
+    --background-end-rgb: 255, 255, 255;
+}
+
+body {
+    color: rgb(var(--foreground-rgb));
+    background: rgb(var(--background-end-rgb));
+}
+
+@media (min-width: 0px) {
+    @import "handsontable/dist/handsontable.full.min.css";
+}
+.chat-message-container {
+    scroll-behavior: smooth;
+}
+
+.chat-message-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-message-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.chat-message-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.chat-message-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+.handsontable {
+    z-index: 1 !important;
+}
+
+.handsontable .wtHolder {
+    z-index: 1 !important;
+}
+
+.handsontable .htCore {
+    z-index: 1 !important;
+}

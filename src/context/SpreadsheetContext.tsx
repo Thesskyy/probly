@@ -1,48 +1,120 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { CellUpdate } from "@/types/api";
+import { calculateCellValue } from "@/lib/spreadsheet/config";
 
 interface SpreadsheetContextType {
-  setFormulas: (updates: Array<{ cell: string; formula: string }>) => void;
-  setFormula: (cell: string, formula: string) => void;
-  formulaQueue: Array<{ cell: string; formula: string }>;
-  clearFormula: (index: number) => void;
+  setFormula: (target: string, formula: string) => void;
+  setFormulas: (updates: CellUpdate[]) => void;
+  formulaQueue: Map<string, string>;
+  clearFormula: (target: string) => void;
+  setChartData: (chartData: any) => void;
+  cellValues: Map<string, any>;
+  setCellValues: (updates: Map<string, any>) => void;
+  clearCellValues: (target: string) => void;
 }
 
-const SpreadsheetContext = createContext<SpreadsheetContextType | null>(null);
+const SpreadsheetContext = createContext<SpreadsheetContextType | undefined>(
+  undefined,
+);
 
-export const SpreadsheetProvider = ({ children }: { children: ReactNode }) => {
-  const [formulaQueue, setFormulaQueue] = useState<Array<{ cell: string; formula: string }>>([]);
+export const useSpreadsheet = () => {
+  const context = useContext(SpreadsheetContext);
+  if (!context) {
+    throw new Error("useSpreadsheet must be used within a SpreadsheetProvider");
+  }
+  return context;
+};
 
-  const setFormulas = (updates: Array<{ target: string; formula: string }>) => {
-    setFormulaQueue(prev => [
-      ...prev,
-      ...updates.map(u => ({ cell: u.target, formula: u.formula }))
-    ]);
+export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [formulaQueue, setFormulaQueue] = useState<Map<string, string>>(
+    new Map(),
+  );
+  const [cellValues, setCellValuesState] = useState<Map<string, any>>(
+    new Map(),
+  );
+  const [evaluatedValues, setEvaluatedValues] = useState<Map<string, any>>(
+    new Map(),
+  );
+
+  useEffect(() => {
+    const nextEvaluatedValues = new Map(evaluatedValues);
+    formulaQueue.forEach((formula, target) => {
+      const calculatedValue = calculateCellValue(formula, target, cellValues);
+      nextEvaluatedValues.set(target, calculatedValue);
+    });
+    setEvaluatedValues(nextEvaluatedValues);
+  }, [formulaQueue, cellValues]);
+
+  const setFormula = (target: string, formula: string) => {
+    setFormulaQueue((prev) => {
+      const next = new Map(prev);
+      next.set(target, formula);
+      return next;
+    });
   };
 
-  const setFormula = (cell: string, formula: string) => {
-    setFormulaQueue(prev => [...prev, { cell, formula }]);
+  const setFormulas = (updates: CellUpdate[]) => {
+    setFormulaQueue((prev) => {
+      const next = new Map(prev);
+      updates.forEach(({ target, formula }) => {
+        next.set(target, formula);
+      });
+      return next;
+    });
   };
 
-  const clearFormula = (index: number) => {
-    setFormulaQueue(prev => prev.filter((_, i) => i !== index));
+  const clearFormula = (target: string) => {
+    setFormulaQueue((prev) => {
+      const next = new Map(prev);
+      next.delete(target);
+      return next;
+    });
+  };
+
+  const setChartData = (chartData: any) => {
+    setFormulaQueue((prev) => {
+      const next = new Map(prev);
+      next.set("chart", JSON.stringify(chartData));
+      return next;
+    });
+  };
+
+  const setCellValues = (updates: Map<string, any>) => {
+    setCellValuesState((prev) => {
+      const next = new Map(prev);
+      updates.forEach((value, key) => {
+        next.set(key, value);
+      });
+      return next;
+    });
+  };
+
+  const clearCellValues = (target: string) => {
+    setCellValuesState((prev) => {
+      const next = new Map(prev);
+      next.delete(target);
+      return next;
+    });
   };
 
   return (
-    <SpreadsheetContext.Provider value={{
-      setFormula,
-      setFormulas,
-      formulaQueue,
-      clearFormula
-    }}>
+    <SpreadsheetContext.Provider
+      value={{
+        setFormula,
+        setFormulas,
+        formulaQueue,
+        clearFormula,
+        setChartData,
+        cellValues: evaluatedValues,
+        setCellValues,
+        clearCellValues,
+      }}
+    >
       {children}
     </SpreadsheetContext.Provider>
   );
 };
 
-export const useSpreadsheet = () => {
-  const context = useContext(SpreadsheetContext);
-  if (!context) {
-    throw new Error('useSpreadsheet must be used within SpreadsheetProvider');
-  }
-  return context;
-};
+export default SpreadsheetContext;
