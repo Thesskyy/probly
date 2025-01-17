@@ -43,19 +43,17 @@ npm run electron-start
 
 - Next.js 14
 - TypeScript
-- Jspreadsheet CE
-- Electron
 - OpenAI API
-
+- Handsontable
 
 ## Development Roadmap
 - [x] Add a chat history
-- [ ] Add visualizations / graphing
+- [x] Add visualizations / graphing
 - [x] Add excel import / export
 - [ ] Try to respect formatting on import
-- [ ] Add an accept / reject button on the chat response prior to applying it to the spreadsheet
+- [x] Add an accept / reject button on the chat response prior to applying it to the spreadsheet
 - [ ] Other kinds of operations (hide rows where, hide columns where, sort table by attribute, etc.)
 - [ ] Support for multiple sheets (or select sheet to use on import)
 - [ ] Make more of the top toolbar buttons work (first check out of the box hands on table functionality)
-- [] Keybindings / hotkeys
+- [x] Keybindings / hotkeys
 - [x] Hide chat window with expand / collapse button
