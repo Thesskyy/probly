@@ -1,6 +1,6 @@
 # Excel-Gen-AI
 
-A Next.js application with an Excel-like interface using Jspreadsheet, available as an Electron desktop application.
+A Next.js application with an Excel-like interface using Handsontable.
 
 ## Requirements
 
@@ -27,16 +27,12 @@ Development mode:
 ```bash
 # Start Next.js development server
 npm run dev
-# In a separate terminal, start Electron
-npm run electron-dev
 ```
 
 Production build:
 ```bash
 # Build Next.js
 npm run build
-# Start Electron with production build
-npm run electron-start
 ```
 
 ## Tech Stack
