@@ -5,6 +5,7 @@ export interface ChatMessage {
   timestamp: Date;
   status: "pending" | "accepted" | "rejected" | null;
   updates?: CellUpdate[];
+  streaming?: boolean;
 }
 
 export interface CellUpdate {

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { CellUpdate } from "@/types/api";
-import { calculateCellValue } from "@/lib/spreadsheet/config";
+import { calculateCellValue } from "@/lib/file/spreadsheet/config";
 
 interface SpreadsheetContextType {
   setFormula: (target: string, formula: string) => void;

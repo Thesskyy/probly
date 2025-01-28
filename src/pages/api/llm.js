@@ -1,4 +1,8 @@
-const OpenAI = require("openai");
+import Sandbox, { runCode } from "@e2b/code-interpreter";
+import OpenAI from "openai";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -11,6 +15,11 @@ const isChartRequest = (message) => {
     lowerCaseMessage.includes("graph") ||
     lowerCaseMessage.includes("plot")
   );
+};
+
+const isAnalysisRequest = (message) => {
+  const lowerCaseMessage = message.toLowerCase();
+  return lowerCaseMessage.includes("sort");
 };
 
 function formatSpreadsheetData(data) {
@@ -37,10 +46,11 @@ function formatSpreadsheetData(data) {
   }, "");
 }
 
-async function handleLLMRequest(message, spreadsheetData) {
+async function handleLLMRequest(message, spreadsheetData, res) {
   try {
+    const data = formatSpreadsheetData(spreadsheetData);
     const spreadsheetContext = spreadsheetData?.length
-      ? `Current spreadsheet data:\n${formatSpreadsheetData(spreadsheetData)}\n`
+      ? `Current spreadsheet data:\n${data}\n`
       : "";
 
     console.log("Spreadsheet context:", spreadsheetContext);
@@ -95,30 +105,70 @@ async function handleLLMRequest(message, spreadsheetData) {
       response_format: { type: "json_object" },
     });
 
-    const response = JSON.parse(
-      completion.choices[0]?.message?.content || '{"updates": []}',
-    );
+    const response = JSON.parse(completion.choices[0]?.message?.content);
+    let pythonCode = "";
 
-    if (isChartRequest(message) && response.chartData) {
-      return { chartData: response.chartData };
+    // Run Python code in the sandbox
+    if (isAnalysisRequest(message)) {
+      //construct the python script with the function call to analysis.py
+      pythonCode = `
+        import pandas as pd
+        import os
+
+        # Load the data from the string passed from node, and make sure empty strings are converted to null values
+        data = ${data};
+        df = pd.DataFrame(data).replace('', None)
+
+        print(df.columns.tolist())
+        `;
+      const sbx = await Sandbox.create();
+      const result = await sbx.runCode(pythonCode);
+      const { stdout, stderr, error, results } = result;
+      console.log(result.logs);
+      console.log("python output:", stdout, stderr);
+
+      if (error) {
+        res.write(
+          `data: ${JSON.stringify({ error: `Error running python code: ${error} ${stderr} ${stdout}` })}\n\n`,
+        );
+        return;
+      }
     }
 
-    return response.updates ? { updates: response.updates } : {};
+    if (isChartRequest(message) && response.chartData) {
+      // Send chart data as a complete JSON object
+      res.write(
+        `data: ${JSON.stringify({ chartData: response.chartData })}\n\n`,
+      );
+    } else if (response.updates) {
+      res.write(`data: ${JSON.stringify({ updates: response.updates })}\n\n`);
+    } else {
+      res.write(`data: ${JSON.stringify({})}\n\n`);
+    }
   } catch (error) {
     console.error("LLM API error:", error);
-    throw error;
+    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+  } finally {
+    res.end();
   }
 }
 
 export default async function handler(req, res) {
   if (req.method === "POST") {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
     try {
       const { message, spreadsheetData } = req.body;
-      const result = await handleLLMRequest(message, spreadsheetData);
-      res.status(200).json(result);
+      await handleLLMRequest(message, spreadsheetData, res);
     } catch (error) {
       console.error("Error processing LLM request:", error);
-      res.status(500).json({ error: "Failed to process request" });
+      res.write(
+        `data: ${JSON.stringify({ error: "Failed to process request" })}\n\n`,
+      );
+      res.end();
     }
   } else {
     res.setHeader("Allow", ["POST"]);

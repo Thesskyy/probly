@@ -10,7 +10,7 @@ import {
 import { CellUpdate, ChatMessage } from "@/types/api";
 import type { SpreadsheetRef } from "@/components/Spreadsheet";
 import path from "path";
-import { fileImport } from "@/lib/file/import";
+import {} from "@/lib/file/import";
 import { fileExport } from "@/lib/file/export";
 
 const Spreadsheet = dynamic(() => import("@/components/Spreadsheet"), {
@@ -78,9 +78,18 @@ const SpreadsheetApp = () => {
   }, [chatHistory]);
 
   const handleSend = async (message: string) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      text: message,
+      response: "",
+      timestamp: new Date(),
+      status: "pending",
+      streaming: true,
+    };
+    setChatHistory((prev) => [...prev, newMessage]);
+
     try {
-      console.log("Using Web API...");
-      const fetchResponse = await fetch("/api/llm", {
+      const response = await fetch("/api/llm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -89,52 +98,93 @@ const SpreadsheetApp = () => {
         }),
       });
 
-      if (!fetchResponse.ok) {
-        throw new Error(`HTTP error! status: ${fetchResponse.status}`);
-      }
-      const response = await fetchResponse.json();
-      let updates, chartData;
-      if (response.updates) {
-        updates = response.updates;
-      } else if (response.chartData) {
-        chartData = response.chartData;
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("Could not read response stream.");
       }
 
-      const formattedResponse = updates
-        ? updates
-            .map((update) => `${update.target}: ${update.formula}`)
-            .join("\n")
-        : chartData
-          ? "Chart generated"
-          : "No updates available";
+      let accumulatedResponse = "";
+      let updates: CellUpdate[] | undefined;
+      let chartData: any | undefined;
 
-      const newMessage: ChatMessage = {
-        id: Date.now().toString(),
-        text: message,
-        response: formattedResponse,
-        timestamp: new Date(),
-        status: "pending",
-        updates: updates,
-      };
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      setChatHistory((prev) => [...prev, newMessage]);
-      if (updates) {
-        return updates;
-      } else if (chartData) {
-        setChartData(chartData);
+        const chunk = new TextDecoder().decode(value);
+        const events = chunk.split("\n\n").filter(Boolean);
+
+        for (const event of events) {
+          if (event.startsWith("data: ")) {
+            const jsonData = event.substring(6);
+            try {
+              const parsedData = JSON.parse(jsonData);
+
+              if (parsedData.response) {
+                if (parsedData.streaming) {
+                  // For streaming content, append to the existing response
+                  accumulatedResponse += parsedData.response;
+                } else {
+                  // For final content, replace the entire response
+                  accumulatedResponse = parsedData.response;
+                }
+
+                updates = parsedData.updates;
+                chartData = parsedData.chartData;
+              }
+
+              // Update the chat message with current state
+              setChatHistory((prev) =>
+                prev.map((msg) =>
+                  msg.id === newMessage.id
+                    ? {
+                        ...msg,
+                        response: accumulatedResponse,
+                        updates: updates,
+                        streaming: parsedData.streaming ?? false,
+                      }
+                    : msg,
+                ),
+              );
+
+              // Update chart if present
+              if (chartData) {
+                setChartData(chartData);
+              }
+            } catch (e) {
+              console.error("Error parsing SSE data:", e);
+            }
+          }
+        }
       }
+
+      // Final update
+      setChatHistory((prev) =>
+        prev.map((msg) =>
+          msg.id === newMessage.id
+            ? {
+                ...msg,
+                response: accumulatedResponse,
+                updates: updates,
+                streaming: false,
+                status: updates || chartData ? "pending" : null,
+              }
+            : msg,
+        ),
+      );
     } catch (error) {
       console.error("Error in handleSend:", error);
-
-      const errorMessage: ChatMessage = {
-        id: Date.now().toString(),
-        text: message,
-        response: `Error: ${error instanceof Error ? error.message : "An unknown error occurred"}`,
-        timestamp: new Date(),
-      };
-
-      setChatHistory((prev) => [...prev, errorMessage]);
-      throw error;
+      setChatHistory((prev) =>
+        prev.map((msg) =>
+          msg.id === newMessage.id
+            ? {
+                ...msg,
+                response: `Error: ${error instanceof Error ? error.message : "An unknown error occurred"}`,
+                streaming: false,
+              }
+            : msg,
+        ),
+      );
     }
   };
 
