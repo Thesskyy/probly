@@ -12,7 +12,6 @@ const SpreadsheetEChart: React.FC<ChartProps> = ({ data, title, type }) => {
 
   useEffect(() => {
     if (chartRef.current) {
-      console.log("DATA>>", data);
       const labels = data.slice(1).map((row) => row[0] || "");
       const series = data[0].slice(1).map((col, index) => ({
         name: col || `Series ${index + 1}`,

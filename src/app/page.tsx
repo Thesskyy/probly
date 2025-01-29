@@ -12,6 +12,7 @@ import type { SpreadsheetRef } from "@/components/Spreadsheet";
 import path from "path";
 import {} from "@/lib/file/import";
 import { fileExport } from "@/lib/file/export";
+import { prepareChatHistory } from "@/utils/chatUtils";
 
 const Spreadsheet = dynamic(() => import("@/components/Spreadsheet"), {
   ssr: false,
@@ -89,12 +90,14 @@ const SpreadsheetApp = () => {
     setChatHistory((prev) => [...prev, newMessage]);
 
     try {
+      const formattedHistory = prepareChatHistory(chatHistory);
       const response = await fetch("/api/llm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
           spreadsheetData,
+          chatHistory: formattedHistory,
         }),
       });
 

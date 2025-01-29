@@ -1,70 +1,10 @@
 import { OpenAI } from "openai";
 import { system_message } from "@/constants/messages";
+import { Sandbox } from "@e2b/code-interpreter";
+import { convertToCSV } from "@/utils/dataUtils";
 import dotenv from "dotenv";
+import { tools } from "@/constants/tools";
 dotenv.config();
-
-const tools = [
-  {
-    type: "function" as const,
-    function: {
-      name: "set_spreadsheet_cells",
-      description: "Set values to specified spreadsheet cells",
-      parameters: {
-        type: "object",
-        properties: {
-          cellUpdates: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                formula: { type: "string" },
-                target: { type: "string" },
-              },
-              required: ["formula", "target"],
-              additionalProperties: false,
-            },
-            strict: true,
-          },
-        },
-      },
-      required: ["cellUpdates"],
-    },
-  },
-  {
-    type: "function" as const,
-    function: {
-      name: "create_chart",
-      description:
-        "Create a chart in the spreadsheet based on the type of chart specified by the user",
-      parameters: {
-        type: "object",
-        properties: {
-          type: {
-            type: "string",
-            enum: ["line", "bar", "pie", "scatter"],
-            description: "The type of chart to create",
-          },
-          title: {
-            type: "string",
-            description: "The title of the chart",
-          },
-          data: {
-            type: "array",
-            items: {
-              type: "array",
-              items: {
-                type: ["string", "number"],
-              },
-            },
-            description:
-              "The data for the chart, first row should contain headers",
-          },
-        },
-        required: ["type", "title", "data"],
-      },
-    },
-  },
-];
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || "",
@@ -98,6 +38,7 @@ function formatSpreadsheetData(data: any[][]): string {
 async function handleLLMRequest(
   message: string,
   spreadsheetData: any[][],
+  chatHistory: { role: string; content: string }[],
   res: any,
 ): Promise<void> {
   try {
@@ -107,13 +48,14 @@ async function handleLLMRequest(
       : "";
 
     const userMessage = `${spreadsheetContext}User question: ${message}`;
-
+    const messages = [
+      { role: "system", content: system_message },
+      ...chatHistory.slice(-10),
+      { role: "user", content: userMessage },
+    ];
     // First, try a streaming call without tools
     const stream = await openai.chat.completions.create({
-      messages: [
-        { role: "system", content: system_message },
-        { role: "user", content: userMessage },
-      ],
+      messages: messages,
       model: model,
       stream: true,
     });
@@ -135,8 +77,7 @@ async function handleLLMRequest(
     // After streaming text, check if we need tool calls
     const toolCompletion = await openai.chat.completions.create({
       messages: [
-        { role: "system", content: system_message },
-        { role: "user", content: userMessage },
+        ...messages,
         { role: "assistant", content: accumulatedContent },
       ],
       model: model,
@@ -177,6 +118,47 @@ async function handleLLMRequest(
           `Type: ${args.type}\n` +
           `Title: ${args.title}\n` +
           `Data:\n${args.data.map((row) => row.join(", ")).join("\n")}`;
+      } else if (toolCall.function.name === "execute_python_code") {
+        const sandbox = await Sandbox.create();
+        const dirname = "/home/user";
+
+        //parse the tool call args
+        const { analysis_goal, suggested_code } = JSON.parse(
+          toolCall.function.arguments,
+        );
+
+        const csvData = convertToCSV(spreadsheetData);
+
+        // write data file
+        await sandbox.files.write(`${dirname}/data.csv`, csvData);
+
+        // create python script with suggested code
+        const pythonScript = `
+          import pandas as pd
+          import numpy as np
+
+          # Read the data
+          df = pd.read_csv('/home/user/data.csv')
+
+          # Execute analysis
+          ${suggested_code}
+          `;
+        console.log("Python Script", pythonScript);
+
+        const execution = await sandbox.runCode(pythonScript, {
+          onResult: (result) => console.log("result:", result),
+        });
+
+        console.log("Code execution finished!");
+
+        toolData = {
+          response: `Analysis: ${analysis_goal}\n\nResults:\n${execution.logs.stdout}`,
+          analysis: {
+            goal: analysis_goal,
+            output: execution.logs.stdout,
+            error: execution.logs.stderr,
+          },
+        };
       }
 
       res.write(
@@ -211,8 +193,8 @@ export default async function handler(req: any, res: any): Promise<void> {
     res.flushHeaders();
 
     try {
-      const { message, spreadsheetData } = req.body;
-      await handleLLMRequest(message, spreadsheetData, res);
+      const { message, spreadsheetData, chatHistory } = req.body;
+      await handleLLMRequest(message, spreadsheetData, chatHistory, res);
     } catch (error: any) {
       console.error("Error processing LLM request:", error);
       res.write(

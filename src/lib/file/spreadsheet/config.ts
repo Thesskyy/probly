@@ -36,6 +36,7 @@ const getInitialConfig = (data: any[][]) => {
     autoRowSize: true,
     manualColumnResize: true,
     manualRowResize: true,
+    manualRowMove: true,
     colWidths: 150,
     contextMenu: true,
     comments: true,
