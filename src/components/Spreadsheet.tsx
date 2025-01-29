@@ -8,8 +8,8 @@ import {
 import Handsontable from "handsontable";
 import "handsontable/dist/handsontable.full.min.css";
 import { useSpreadsheet } from "@/context/SpreadsheetContext";
-import { getInitialConfig } from "@/lib/spreadsheet/config";
-import { excelCellToRowCol } from "@/lib/spreadsheet/utils";
+import { getInitialConfig } from "@/lib/file/spreadsheet/config";
+import { excelCellToRowCol } from "@/lib/file/spreadsheet/utils";
 import SpreadsheetToolbar from "./SpreadsheetToolbar";
 import SpreadsheetEChart from "./SpreadsheetEChart";
 import { fileImport } from "@/lib/file/import";
@@ -147,13 +147,12 @@ const Spreadsheet = forwardRef<SpreadsheetRef, SpreadsheetProps>(
     }, [chartData]);
 
     useEffect(() => {
-      if (formulaQueue.size > 0) {
-        console.log("formulaQueue:", formulaQueue);
-      }
       formulaQueue.forEach((data, target) => {
         if (target === "chart") {
           try {
-            setChartData(JSON.parse(data));
+            const parsedData = JSON.parse(data);
+            console.log("Parsed chart data:", parsedData);
+            setChartData(parsedData);
           } catch (error) {
             console.error("Error setting chart data:", error);
           }

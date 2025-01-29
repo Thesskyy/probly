@@ -3,7 +3,7 @@ import { CellUpdate, ChatMessage } from "@/types/api";
 import { Check, X, Send, Trash2, Loader2 } from "lucide-react";
 
 interface ChatBoxProps {
-  onSend: (message: string) => Promise<CellUpdate[]>;
+  onSend: (message: string) => Promise<void>; // Changed to void
   onAccept: (updates: CellUpdate[], messageId: string) => void;
   onReject: (messageId: string) => void;
   chatHistory: ChatMessage[];
@@ -24,7 +24,7 @@ const ChatBox = ({
     if (message.trim()) {
       setIsLoading(true);
       try {
-        const updates = await onSend(message);
+        await onSend(message); // Changed to await for streaming
       } catch (error) {
         console.error("Error details:", error);
       } finally {
@@ -86,34 +86,43 @@ const ChatBox = ({
                   <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
                     {chat.response}
                   </pre>
-                  {/* Accept/Reject Buttons */}
-                  {chat.status === "pending" && chat.updates && (
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        onClick={() => onAccept(chat.updates!, chat.id)}
-                        className="px-3 py-1 bg-green-500 text-white rounded-full text-sm flex items-center gap-1 hover:bg-green-600 transition-colors"
-                      >
-                        <Check size={14} />
-                        Apply
-                      </button>
-                      <button
-                        onClick={() => onReject(chat.id)}
-                        className="px-3 py-1 bg-red-500 text-white rounded-full text-sm flex items-center gap-1 hover:bg-red-600 transition-colors"
-                      >
-                        <X size={14} />
-                        Reject
-                      </button>
+                  {chat.streaming && (
+                    <div className="mt-2 text-gray-500 text-xs flex items-center gap-1">
+                      <Loader2 size={14} className="animate-spin" />
+                      Thinking...
                     </div>
                   )}
 
+                  {/* Accept/Reject Buttons */}
+                  {!chat.streaming &&
+                    chat.status === "pending" &&
+                    chat.updates && (
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          onClick={() => onAccept(chat.updates!, chat.id)}
+                          className="px-3 py-1 bg-green-500 text-white rounded-full text-sm flex items-center gap-1 hover:bg-green-600 transition-colors"
+                        >
+                          <Check size={14} />
+                          Apply
+                        </button>
+                        <button
+                          onClick={() => onReject(chat.id)}
+                          className="px-3 py-1 bg-red-500 text-white rounded-full text-sm flex items-center gap-1 hover:bg-red-600 transition-colors"
+                        >
+                          <X size={14} />
+                          Reject
+                        </button>
+                      </div>
+                    )}
+
                   {/* Status Indicator */}
-                  {chat.status === "accepted" && (
+                  {!chat.streaming && chat.status === "accepted" && (
                     <div className="mt-2 text-green-500 text-xs flex items-center gap-1">
                       <Check size={14} />
                       Applied
                     </div>
                   )}
-                  {chat.status === "rejected" && (
+                  {!chat.streaming && chat.status === "rejected" && (
                     <div className="mt-2 text-red-500 text-xs flex items-center gap-1">
                       <X size={14} />
                       Rejected

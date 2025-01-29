@@ -1,5 +1,4 @@
 import { HyperFormula } from "hyperformula";
-import { GridSettings } from "handsontable/settings";
 
 import * as XLSX from "xlsx";
 
@@ -37,6 +36,7 @@ const getInitialConfig = (data: any[][]) => {
     autoRowSize: true,
     manualColumnResize: true,
     manualRowResize: true,
+    manualRowMove: true,
     colWidths: 150,
     contextMenu: true,
     comments: true,
