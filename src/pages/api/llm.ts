@@ -1,9 +1,11 @@
 import { OpenAI } from "openai";
-import { system_message } from "@/constants/messages";
+import { SYSTEM_MESSAGE } from "@/constants/messages";
 import { Sandbox } from "@e2b/code-interpreter";
 import { convertToCSV } from "@/utils/dataUtils";
 import dotenv from "dotenv";
 import { tools } from "@/constants/tools";
+import { CellUpdate } from "@/types/api";
+import { generateKey } from "crypto";
 dotenv.config();
 
 const openai = new OpenAI({
@@ -49,7 +51,7 @@ async function handleLLMRequest(
 
     const userMessage = `${spreadsheetContext}User question: ${message}`;
     const messages = [
-      { role: "system", content: system_message },
+      { role: "system", content: SYSTEM_MESSAGE },
       ...chatHistory.slice(-10),
       { role: "user", content: userMessage },
     ];
@@ -122,40 +124,47 @@ async function handleLLMRequest(
         const sandbox = await Sandbox.create();
         const dirname = "/home/user";
 
-        //parse the tool call args
-        const { analysis_goal, suggested_code } = JSON.parse(
+        const { analysis_goal, suggested_code, cell_updates } = JSON.parse(
           toolCall.function.arguments,
         );
-
+        console.log("CELL UPDATES", cell_updates);
         const csvData = convertToCSV(spreadsheetData);
-
-        // write data file
         await sandbox.files.write(`${dirname}/data.csv`, csvData);
 
-        // create python script with suggested code
         const pythonScript = `
           import pandas as pd
           import numpy as np
-
           # Read the data
           df = pd.read_csv('/home/user/data.csv')
-
           # Execute analysis
           ${suggested_code}
-          `;
-        console.log("Python Script", pythonScript);
+        `;
 
-        const execution = await sandbox.runCode(pythonScript, {
-          onResult: (result) => console.log("result:", result),
-        });
+        const execution = await sandbox.runCode(pythonScript);
+        const fileContent = await sandbox.files.read("/home/user/outputs.csv");
+        console.log("FILE CONTENT>", fileContent);
+        // Parse the CSV output to generate cell updates
+        const outputRows = fileContent
+          .trim()
+          .split("\n")
+          .map((row) => row.split(","));
 
-        console.log("Code execution finished!");
+        const generatedUpdates: CellUpdate[] = outputRows.flatMap(
+          (row, rowIndex) =>
+            row.map((value, colIndex) => ({
+              target: cell_updates[rowIndex * row.length + colIndex].target,
+              formula: value.toString(),
+            })),
+        );
 
+        // Generate cell updates based on the output data
+        console.log("GENERATED UPDATES", generatedUpdates);
         toolData = {
-          response: `Analysis: ${analysis_goal}\n\nResults:\n${execution.logs.stdout}`,
+          response: `Analysis: ${analysis_goal}\n\nResults:\n${fileContent}`,
+          updates: generatedUpdates,
           analysis: {
             goal: analysis_goal,
-            output: execution.logs.stdout,
+            output: fileContent,
             error: execution.logs.stderr,
           },
         };

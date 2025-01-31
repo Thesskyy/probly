@@ -60,27 +60,45 @@ export const tools = [
     },
   },
   {
-    type: "function" as const,
+    type: "function",
     function: {
       name: "execute_python_code",
       description:
-        "Generate and execute Python code for data analysis using pandas and numpy. The code will be generated based on the user's request.",
+        "Execute Python code for complex data analysis and return results as cell updates",
       parameters: {
         type: "object",
         properties: {
           analysis_goal: {
             type: "string",
-            description:
-              "Clear description of what analysis needs to be performed",
+            description: "Description of what the analysis aims to achieve",
           },
           suggested_code: {
             type: "string",
+            description: "Python code to execute the analysis",
+          },
+          cell_updates: {
+            type: "array",
             description:
-              "The Python code to execute. Should use pandas and numpy appropriately.",
+              "Array of target cell locations where the Python output should be placed. DO NOT include computed values, only target locations.",
+            items: {
+              type: "object",
+              properties: {
+                target: {
+                  type: "string",
+                  description:
+                    "Target cell reference (e.g., 'A1') where results should be placed",
+                },
+                formula: {
+                  type: "string",
+                  description:
+                    "Leave empty or use placeholder. Actual values will be populated from Python execution results.",
+                },
+              },
+              required: ["target", "formula"],
+            },
           },
         },
-        required: ["analysis_goal", "suggested_code"],
-        additionalProperties: false,
+        required: ["analysis_goal", "suggested_code", "cell_updates"],
       },
     },
   },
