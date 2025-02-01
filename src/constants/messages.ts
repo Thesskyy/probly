@@ -47,17 +47,6 @@ TOOLS SELECTION GUIDELINES:
   - Complex filtering or aggregation
   - Time series analysis
   - Custom calculations across multiple columns
-  IMPORTANT NOTE ON CELL_UPDATES:
-  - When specifying cell_updates, only provide target cell locations
-  - DO NOT pre-compute or include values in the formula field
-  - The actual values will be populated from the Python execution results
-  - Example cell_updates structure:
-    [
-        {"target": "A1", "formula": "" | <PLACE HOlDER>},
-        {"target": "B1", "formula": "" | <PLACE HOlDER>},
-        {"target": "A2", "formula": "" | <PLACE HOlDER>},
-        {"target": "B2", "formula": "" | <PLACE HOlDER>}
-      ]
 
   SPATIAL PLACEMENT RULES:
   - For new analysis results, start 2 rows below the last occupied row

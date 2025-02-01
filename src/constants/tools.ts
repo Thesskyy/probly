@@ -76,26 +76,10 @@ export const tools = [
             type: "string",
             description: "Python code to execute the analysis",
           },
-          cell_updates: {
-            type: "array",
+          start_cell: {
+            type: "string",
             description:
-              "Array of target cell locations where the Python output should be placed. DO NOT include computed values, only target locations.",
-            items: {
-              type: "object",
-              properties: {
-                target: {
-                  type: "string",
-                  description:
-                    "Target cell reference (e.g., 'A1') where results should be placed",
-                },
-                formula: {
-                  type: "string",
-                  description:
-                    "Leave empty or use placeholder. Actual values will be populated from Python execution results.",
-                },
-              },
-              required: ["target", "formula"],
-            },
+              "Start cell reference (e.g., 'A1') where the results should begin.",
           },
         },
         required: ["analysis_goal", "suggested_code", "cell_updates"],

@@ -124,10 +124,10 @@ async function handleLLMRequest(
         const sandbox = await Sandbox.create();
         const dirname = "/home/user";
 
-        const { analysis_goal, suggested_code, cell_updates } = JSON.parse(
+        const { analysis_goal, suggested_code, start_cell } = JSON.parse(
           toolCall.function.arguments,
         );
-        console.log("CELL UPDATES", cell_updates);
+        console.log("START CELL", start_cell);
         const csvData = convertToCSV(spreadsheetData);
         await sandbox.files.write(`${dirname}/data.csv`, csvData);
 
@@ -149,10 +149,12 @@ async function handleLLMRequest(
           .split("\n")
           .map((row) => row.split(","));
 
+        const colLetter = start_cell.match(/[A-Z]+/)[0];
+        const rowNumber = parseInt(start_cell.match(/\d+/)[0]);
         const generatedUpdates: CellUpdate[] = outputRows.flatMap(
           (row, rowIndex) =>
             row.map((value, colIndex) => ({
-              target: cell_updates[rowIndex * row.length + colIndex].target,
+              target: `${String.fromCharCode(colLetter.charCodeAt(0) + colIndex)}${rowNumber + rowIndex}`,
               formula: value.toString(),
             })),
         );
