@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { CellUpdate, ChatMessage } from "@/types/api";
-import { Check, X, Send, Trash2, Loader2 } from "lucide-react";
+import { Check, X, Send, Trash2, Loader2, Square } from "lucide-react";
 
 interface ChatBoxProps {
   onSend: (message: string) => Promise<void>; // Changed to void
+  onStop: () => void;
   onAccept: (updates: CellUpdate[], messageId: string) => void;
   onReject: (messageId: string) => void;
   chatHistory: ChatMessage[];
@@ -12,6 +13,7 @@ interface ChatBoxProps {
 
 const ChatBox = ({
   onSend,
+  onStop,
   onAccept,
   onReject,
   chatHistory,
@@ -22,14 +24,20 @@ const ChatBox = ({
 
   const handleSend = async () => {
     if (message.trim()) {
+      if (isLoading) {
+        onStop();
+        setIsLoading(false);
+        return;
+      }
+      const currentMessage = message;
+      setMessage("");
       setIsLoading(true);
       try {
-        await onSend(message); // Changed to await for streaming
+        await onSend(currentMessage); // Changed to await for streaming
       } catch (error) {
         console.error("Error details:", error);
       } finally {
         setIsLoading(false);
-        setMessage("");
       }
     }
   };
@@ -137,24 +145,31 @@ const ChatBox = ({
 
       {/* Input Area */}
       <div className="p-4 bg-white border-t border-gray-200 rounded-b-lg">
-        <div className="flex gap-2 items-center">
-          <input
-            type="text"
+        <div className="flex gap-2 items-end">
+          {" "}
+          {/* Changed to items-end */}
+          <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="flex-1 px-4 py-2 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none min-h-[80px]"
             placeholder="Type your message..."
             disabled={isLoading}
+            rows={3}
           />
           <button
             onClick={handleSend}
-            disabled={isLoading || !message.trim()}
-            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-            title="Send message"
+            disabled={!message.trim() && !isLoading}
+            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed h-10 w-10 flex items-center justify-center"
+            title={isLoading ? "Stop generating" : "Send Message"}
           >
             {isLoading ? (
-              <Loader2 size={20} className="animate-spin" />
+              <Square size={18} className="fill-current" />
             ) : (
               <Send size={20} />
             )}
