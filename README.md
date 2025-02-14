@@ -1,4 +1,4 @@
-# Excel-Gen-AI
+# Probly
 
 A Next.js application with an Excel-like interface using Handsontable.
 
