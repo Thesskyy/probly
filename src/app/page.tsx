@@ -29,6 +29,7 @@ const SpreadsheetApp = () => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const spreadsheetRef = useRef<SpreadsheetRef>(null);
+  const abortController = useRef<AbortController | null>(null);
 
   // Keyboard shortcut for chat toggle
   useEffect(() => {
@@ -78,6 +79,13 @@ const SpreadsheetApp = () => {
     localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
   }, [chatHistory]);
 
+  const handleStop = () => {
+    if (abortController.current) {
+      abortController.current.abort();
+      abortController.current = null;
+    }
+  };
+
   const handleSend = async (message: string) => {
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -90,6 +98,9 @@ const SpreadsheetApp = () => {
     setChatHistory((prev) => [...prev, newMessage]);
 
     try {
+      // Create new AbortController for this request
+      abortController.current = new AbortController();
+
       const formattedHistory = prepareChatHistory(chatHistory);
       const response = await fetch("/api/llm", {
         method: "POST",
@@ -99,6 +110,7 @@ const SpreadsheetApp = () => {
           spreadsheetData,
           chatHistory: formattedHistory,
         }),
+        signal: abortController.current.signal,
       });
 
       const reader = response.body?.getReader();
@@ -176,18 +188,40 @@ const SpreadsheetApp = () => {
         ),
       );
     } catch (error) {
-      console.error("Error in handleSend:", error);
-      setChatHistory((prev) =>
-        prev.map((msg) =>
-          msg.id === newMessage.id
-            ? {
-                ...msg,
-                response: `Error: ${error instanceof Error ? error.message : "An unknown error occurred"}`,
-                streaming: false,
-              }
-            : msg,
-        ),
-      );
+      if (error.name === "AbortError") {
+        // Handle abort case
+        setChatHistory((prev) =>
+          prev.map((msg) =>
+            msg.id === newMessage.id
+              ? {
+                  ...msg,
+                  response: msg.response + "\n[Generation stopped]",
+                  streaming: false,
+                }
+              : msg,
+          ),
+        );
+      } else {
+        // Handle other errors
+        console.error("Error in handleSend:", error);
+        setChatHistory((prev) =>
+          prev.map((msg) =>
+            msg.id === newMessage.id
+              ? {
+                  ...msg,
+                  response: `Error: ${
+                    error instanceof Error
+                      ? error.message
+                      : "An unknown error occurred"
+                  }`,
+                  streaming: false,
+                }
+              : msg,
+          ),
+        );
+      }
+    } finally {
+      abortController.current = null;
     }
   };
 
@@ -246,6 +280,7 @@ const SpreadsheetApp = () => {
           >
             <ChatBox
               onSend={handleSend}
+              onStop={handleStop}
               chatHistory={chatHistory}
               clearHistory={handleClearHistory}
               onAccept={handleAccept}
