@@ -23,7 +23,7 @@ const ChatBox = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSend = async () => {
-    if (message.trim()) {
+    if (message.trim() || isLoading) {
       if (isLoading) {
         onStop();
         setIsLoading(false);
