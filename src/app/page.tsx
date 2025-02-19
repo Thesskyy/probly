@@ -189,6 +189,7 @@ const SpreadsheetApp = () => {
       );
     } catch (error) {
       if (error.name === "AbortError") {
+        console.log("Request Aborted");
         // Handle abort case
         setChatHistory((prev) =>
           prev.map((msg) =>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CellUpdate, ChatMessage } from "@/types/api";
 import { Check, X, Send, Trash2, Loader2, Square } from "lucide-react";
 
@@ -22,8 +22,15 @@ const ChatBox = ({
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    if (chatHistory.length > 0) {
+      const lastMessage = chatHistory[chatHistory.length - 1];
+      setIsLoading(!!lastMessage.streaming);
+    }
+  }, [chatHistory]);
+
   const handleSend = async () => {
-    if (message.trim()) {
+    if (message.trim() || isLoading) {
       if (isLoading) {
         onStop();
         setIsLoading(false);
@@ -36,8 +43,6 @@ const ChatBox = ({
         await onSend(currentMessage); // Changed to await for streaming
       } catch (error) {
         console.error("Error details:", error);
-      } finally {
-        setIsLoading(false);
       }
     }
   };
