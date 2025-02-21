@@ -172,28 +172,20 @@ async function handleLLMRequest(
 
           console.log("RESULT >>>", result);
           // Parse the stdout output to generate cell updates
-          const outputRows = result.stdout
-            .trim()
-            .split("\n")
-            .map(row => {
-              // Split by whitespace but preserve quoted strings
-              const matches = row.match(/(?:[^\s"]+|"[^"]*")+/g);
-              return matches ? matches.map(val => val.replace(/^"(.*)"$/, '$1')) : [];
-            })
-            .filter(row => row.length > 0); // Remove empty rows
-            
+          const outputRows = result.stdout.trim().split("\n").map((row)=> row.split(","));
+          
           console.log("OUTPUT ROWS >>>", outputRows);
           
           const colLetter = start_cell.match(/[A-Z]+/)[0];
           const rowNumber = parseInt(start_cell.match(/\d+/)[0]);
 
-          const generatedUpdates: CellUpdate[] = outputRows.map(
-            (row, rowIndex) => ({
-              target: `${colLetter}${rowNumber + rowIndex}`,
-              formula: row.join('\t')
-            })
+          const generatedUpdates: CellUpdate[][] = outputRows.map(
+            (row, rowIndex) => row.map((value, colIndex) => ({
+              target: `${String.fromCharCode(colLetter.charCodeAt(0) + colIndex)}${rowNumber + rowIndex}`,
+              formula: value.toString()
+            }))
           );
-
+          console.log("GENERATED UPDATES >>>", generatedUpdates);
           toolData = {
             response: `Analysis: ${analysis_goal}\n\nResults:\n${result.stdout}`,
             updates: generatedUpdates,

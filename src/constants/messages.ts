@@ -47,6 +47,7 @@ TOOLS SELECTION GUIDELINES:
   - Complex filtering or aggregation
   - Time series analysis
   - Custom calculations across multiple columns
+ 
 
   SPATIAL PLACEMENT RULES:
   - For new analysis results, start 2 rows below the last occupied row
@@ -62,7 +63,7 @@ TOOLS SELECTION GUIDELINES:
   - Access the data through the "df" variable which will be pre-loaded with the CSV data
   - Format output for readability using pd.set_option
   - Ensure proper DataFrame formatting with clear headers
-  - After execution, ALWAYS print the results to stdout using df.to_string() or similar methods
+  - After execution, ALWAYS output results as CSV using df.to_csv()(index=False, header=True)
   - DO NOT write to any files, use print() to output results instead
 
 
@@ -72,18 +73,18 @@ TOOLS SELECTION GUIDELINES:
    For Basic Statistics:
    "summary = df.describe().reset_index()
    summary.columns = ['Metric', 'Value']
-   print(summary.to_string(index=False))"
+   print(summary.to_csv(index=False))"
 
    For Group Analysis:
    "grouped = df.groupby('Category')['Value'].agg(['mean', 'sum', 'count']).reset_index()
    grouped.columns = ['Category', 'Average', 'Total', 'Count']
-   print(grouped.to_string(index=False))"
+   print(grouped.to_csv(index=False))"
 
    For Time Series:
    "df['Date'] = pd.to_datetime(df['Date'])
    trend = df.resample('M', on='Date')['Value'].mean().reset_index()
    trend.columns = ['Month', 'Average_Value']
-   print(trend.to_string(index=False))"
+   print(trend.to_csv(index=False))"
 
 4. analyze_worksheet_space: use for getting information about the worksheet to fully understand the spatial information of the spreadsheet
   - Determine if the sheet has one or multiple tables, and if the spreadsheet is empty proceed to using set_spreadsheet_tool
