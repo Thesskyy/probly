@@ -7,6 +7,11 @@ import { SYSTEM_MESSAGE } from "@/constants/messages";
 import { convertToCSV } from "@/utils/dataUtils";
 import dotenv from "dotenv";
 import { tools } from "@/constants/tools";
+import { 
+  structureAnalysisOutput, 
+  generateCellUpdates, 
+  formatSpreadsheetData 
+} from "@/utils/analysisUtils";
 
 dotenv.config();
 
@@ -14,30 +19,6 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || "",
 });
 const model = "gpt-4o";
-
-function formatSpreadsheetData(data: any[][]): string {
-  if (!data || !Array.isArray(data)) return "";
-
-  const getColumnRef = (index: number): string => {
-    let columnRef = "";
-    while (index >= 0) {
-      columnRef = String.fromCharCode((index % 26) + 65) + columnRef;
-      index = Math.floor(index / 26) - 1;
-    }
-    return columnRef;
-  };
-
-  return data.reduce((acc, row, rowIndex) => {
-    return (
-      acc +
-      row.reduce((rowAcc, cell, colIndex) => {
-        const cellRef = `${getColumnRef(colIndex)}${rowIndex + 1}`;
-        return rowAcc + `<${cellRef}>${cell}</${cellRef}>`;
-      }, "") +
-      "\n"
-    );
-  }, "");
-}
 
 async function handleLLMRequest(
   message: string,
@@ -170,28 +151,19 @@ async function handleLLMRequest(
             return;
           }
 
-          console.log("RESULT >>>", result);
-          // Parse the stdout output to generate cell updates
-          const outputRows = result.stdout.trim().split("\n").map((row)=> row.split(","));
+          // Structure the output using LLM
+          const structuredOutput = await structureAnalysisOutput(result.stdout, analysis_goal);
+          console.log("STRUCTURED OUTPUT >>>", structuredOutput);
           
-          console.log("OUTPUT ROWS >>>", outputRows);
-          
-          const colLetter = start_cell.match(/[A-Z]+/)[0];
-          const rowNumber = parseInt(start_cell.match(/\d+/)[0]);
+          // Generate cell updates from structured output
+          const generatedUpdates = generateCellUpdates(structuredOutput, start_cell);
 
-          const generatedUpdates: CellUpdate[][] = outputRows.map(
-            (row, rowIndex) => row.map((value, colIndex) => ({
-              target: `${String.fromCharCode(colLetter.charCodeAt(0) + colIndex)}${rowNumber + rowIndex}`,
-              formula: value.toString()
-            }))
-          );
-          console.log("GENERATED UPDATES >>>", generatedUpdates);
           toolData = {
-            response: `Analysis: ${analysis_goal}\n\nResults:\n${result.stdout}`,
-            updates: generatedUpdates,
+            response: `Analysis: ${analysis_goal}\n\nResults:\n${structuredOutput}`,
+            updates: generatedUpdates.flat(), // Flatten the updates array
             analysis: {
               goal: analysis_goal,
-              output: result.stdout,
+              output: structuredOutput,
               error: result.stderr,
             },
           };
