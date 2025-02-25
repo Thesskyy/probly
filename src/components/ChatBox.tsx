@@ -24,8 +24,6 @@ const ChatBox = ({
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [recentlyCompleted, setRecentlyCompleted] = useState<Set<string>>(new Set());
-  const previousChatLengthRef = useRef<number>(chatHistory.length);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -39,35 +37,8 @@ const ChatBox = ({
     if (chatHistory.length > 0) {
       const lastMessage = chatHistory[chatHistory.length - 1];
       setIsLoading(!!lastMessage.streaming);
-      
-      if (chatHistory.length >= previousChatLengthRef.current) {
-        const newlyCompleted = chatHistory.filter(msg => 
-          msg.streaming === false && 
-          !recentlyCompleted.has(msg.id)
-        );
-        
-        if (newlyCompleted.length > 0) {
-          setRecentlyCompleted(prev => {
-            const newSet = new Set(prev);
-            newlyCompleted.forEach(msg => newSet.add(msg.id));
-            return newSet;
-          });
-          
-          newlyCompleted.forEach(msg => {
-            setTimeout(() => {
-              setRecentlyCompleted(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(msg.id);
-                return newSet;
-              });
-            }, 1500);
-          });
-        }
-      }
-      
-      previousChatLengthRef.current = chatHistory.length;
     }
-  }, [chatHistory, recentlyCompleted]);
+  }, [chatHistory]);
 
   const handleSend = async () => {
     if (message.trim() || isLoading) {
@@ -150,17 +121,15 @@ const ChatBox = ({
                         </div>
                       </div>
                     ) : (
-                      <div className={`transition-opacity duration-300 ${recentlyCompleted.has(chat.id) ? 'opacity-0' : 'opacity-100'}`}>
-                        <ToolResponse
-                          response={chat.response}
-                          updates={chat.updates}
-                          chartData={chat.chartData}
-                          analysis={chat.analysis}
-                          status={chat.status}
-                          onAccept={() => onAccept(chat.updates || [], chat.id)}
-                          onReject={() => onReject(chat.id)}
-                        />
-                      </div>
+                      <ToolResponse
+                        response={chat.response}
+                        updates={chat.updates}
+                        chartData={chat.chartData}
+                        analysis={chat.analysis}
+                        status={chat.status}
+                        onAccept={() => onAccept(chat.updates || [], chat.id)}
+                        onReject={() => onReject(chat.id)}
+                      />
                     )}
                   </div>
                   <span className="text-xs text-gray-400 mt-1 block">

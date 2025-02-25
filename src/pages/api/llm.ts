@@ -155,7 +155,7 @@ async function handleLLMRequest(
           const generatedUpdates = generateCellUpdates(structuredOutput, start_cell);
 
           // Create a more concise response message
-          const responseMessage = `Here's the ${analysis_goal.toLowerCase()}`;
+          const responseMessage = `I've analyzed your data: ${analysis_goal}`;
 
           toolData = {
             response: responseMessage,

@@ -53,11 +53,11 @@ const ToolResponse: React.FC<ToolResponseProps> = ({
     }).filter(Boolean);
     
     // Find the range of rows and columns
-    const minRow = Math.min(...cellInfo.filter(Boolean).map(cell => cell.row));
-    const maxRow = Math.max(...cellInfo.filter(Boolean).map(cell => cell.row));
+    const minRow = Math.min(...cellInfo.map(cell => cell.row));
+    const maxRow = Math.max(...cellInfo.map(cell => cell.row));
     
     // Get unique columns in alphabetical order
-    const uniqueCols = Array.from(new Set(cellInfo.filter(Boolean).map(cell => cell.col)))
+    const uniqueCols = Array.from(new Set(cellInfo.map(cell => cell.col)))
       .sort((a, b) => a.localeCompare(b));
     
     // Determine display range based on expanded state
@@ -74,7 +74,7 @@ const ToolResponse: React.FC<ToolResponseProps> = ({
     
     // Create a map of updates for quick lookup
     const updateMap = new Map();
-    cellInfo.filter(Boolean).forEach(cell => {
+    cellInfo.forEach(cell => {
       updateMap.set(cell.target, cell.formula);
     });
     
