@@ -1,4 +1,9 @@
 import type { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources/chat/completions";
+import {
+  formatSpreadsheetData,
+  generateCellUpdates,
+  structureAnalysisOutput
+} from "@/utils/analysisUtils";
 
 import { CellUpdate } from "@/types/api";
 import { OpenAI } from "openai";
@@ -7,11 +12,6 @@ import { SYSTEM_MESSAGE } from "@/constants/messages";
 import { convertToCSV } from "@/utils/dataUtils";
 import dotenv from "dotenv";
 import { tools } from "@/constants/tools";
-import { 
-  structureAnalysisOutput, 
-  generateCellUpdates, 
-  formatSpreadsheetData 
-} from "@/utils/analysisUtils";
 
 dotenv.config();
 
@@ -120,11 +120,7 @@ async function handleLLMRequest(
           options: { title: args.title, data: args.data },
         };
 
-        toolData.response +=
-          "\n\nChart Data:\n" +
-          `Type: ${args.type}\n` +
-          `Title: ${args.title}\n` +
-          `Data:\n${args.data.map((row: any[]) => row.join(", ")).join("\n")}`;
+        toolData.response = `I've created a ${args.type} chart titled "${args.title}" based on your data.`;
       } else if (toolCall.function.name === "execute_python_code") {
         try {
           if (aborted) return;
@@ -158,8 +154,11 @@ async function handleLLMRequest(
           // Generate cell updates from structured output
           const generatedUpdates = generateCellUpdates(structuredOutput, start_cell);
 
+          // Create a more concise response message
+          const responseMessage = `Here's the ${analysis_goal.toLowerCase()}`;
+
           toolData = {
-            response: `Analysis: ${analysis_goal}\n\nResults:\n${structuredOutput}`,
+            response: responseMessage,
             updates: generatedUpdates.flat(), // Flatten the updates array
             analysis: {
               goal: analysis_goal,

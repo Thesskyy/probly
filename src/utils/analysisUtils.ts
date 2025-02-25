@@ -1,5 +1,5 @@
-import { OpenAI } from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import { OpenAI } from "openai";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || "",
@@ -56,7 +56,7 @@ export async function structureAnalysisOutput(rawOutput: string, analysisGoal: s
   ];
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4",
+    model: "gpt-4o",
     messages,
     temperature: 0.1,
   });

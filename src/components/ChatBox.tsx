@@ -1,6 +1,8 @@
-import { useEffect, useState, useRef } from "react";
 import { CellUpdate, ChatMessage } from "@/types/api";
-import { Check, X, Send, Trash2, Loader2, Square } from "lucide-react";
+import { Check, Loader2, Send, Square, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+import ToolResponse from './ToolResponse';
 
 interface ChatBoxProps {
   onSend: (message: string) => Promise<void>;
@@ -22,6 +24,8 @@ const ChatBox = ({
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [recentlyCompleted, setRecentlyCompleted] = useState<Set<string>>(new Set());
+  const previousChatLengthRef = useRef<number>(chatHistory.length);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -35,8 +39,35 @@ const ChatBox = ({
     if (chatHistory.length > 0) {
       const lastMessage = chatHistory[chatHistory.length - 1];
       setIsLoading(!!lastMessage.streaming);
+      
+      if (chatHistory.length >= previousChatLengthRef.current) {
+        const newlyCompleted = chatHistory.filter(msg => 
+          msg.streaming === false && 
+          !recentlyCompleted.has(msg.id)
+        );
+        
+        if (newlyCompleted.length > 0) {
+          setRecentlyCompleted(prev => {
+            const newSet = new Set(prev);
+            newlyCompleted.forEach(msg => newSet.add(msg.id));
+            return newSet;
+          });
+          
+          newlyCompleted.forEach(msg => {
+            setTimeout(() => {
+              setRecentlyCompleted(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(msg.id);
+                return newSet;
+              });
+            }, 1500);
+          });
+        }
+      }
+      
+      previousChatLengthRef.current = chatHistory.length;
     }
-  }, [chatHistory]);
+  }, [chatHistory, recentlyCompleted]);
 
   const handleSend = async () => {
     if (message.trim() || isLoading) {
@@ -107,55 +138,34 @@ const ChatBox = ({
               {/* AI Response */}
               <div className="flex justify-start">
                 <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-2 max-w-[80%] shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200">
-                  <div className="text-sm text-gray-800 break-words font-mono">
+                  <div className="text-sm text-gray-800 break-words">
                     {chat.streaming ? (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-gray-500">
                           <Loader2 size={14} className="animate-spin" />
                           <span className="text-xs">AI is generating response...</span>
                         </div>
-                        <div className="border-l-2 border-blue-200 pl-3">
+                        <div className="border-l-2 border-blue-200 pl-3 font-mono">
                           {chat.response}
                         </div>
                       </div>
                     ) : (
-                      <pre className="whitespace-pre-wrap overflow-x-auto">{chat.response}</pre>
+                      <div className={`transition-opacity duration-300 ${recentlyCompleted.has(chat.id) ? 'opacity-0' : 'opacity-100'}`}>
+                        <ToolResponse
+                          response={chat.response}
+                          updates={chat.updates}
+                          chartData={chat.chartData}
+                          analysis={chat.analysis}
+                          status={chat.status}
+                          onAccept={() => onAccept(chat.updates || [], chat.id)}
+                          onReject={() => onReject(chat.id)}
+                        />
+                      </div>
                     )}
                   </div>
-
-                  {/* Accept/Reject Buttons */}
-                  {!chat.streaming && chat.status === "pending" && chat.updates && (
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        onClick={() => onAccept(chat.updates!, chat.id)}
-                        className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-full text-xs flex items-center gap-1.5 transition-colors duration-200 group"
-                      >
-                        <Check size={14} className="group-hover:scale-110 transition-transform duration-200" />
-                        Apply
-                      </button>
-                      <button
-                        onClick={() => onReject(chat.id)}
-                        className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs flex items-center gap-1.5 transition-colors duration-200 group"
-                      >
-                        <X size={14} className="group-hover:scale-110 transition-transform duration-200" />
-                        Reject
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Status Indicators */}
-                  {!chat.streaming && chat.status === "accepted" && (
-                    <div className="mt-2 text-green-500 text-xs flex items-center gap-1 animate-fadeIn">
-                      <Check size={14} />
-                      Applied
-                    </div>
-                  )}
-                  {!chat.streaming && chat.status === "rejected" && (
-                    <div className="mt-2 text-red-500 text-xs flex items-center gap-1 animate-fadeIn">
-                      <X size={14} />
-                      Rejected
-                    </div>
-                  )}
+                  <span className="text-xs text-gray-400 mt-1 block">
+                    {new Date(chat.timestamp).toLocaleTimeString()}
+                  </span>
                 </div>
               </div>
             </div>

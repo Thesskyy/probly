@@ -6,6 +6,12 @@ export interface ChatMessage {
   status: "pending" | "accepted" | "rejected" | null;
   updates?: CellUpdate[];
   streaming?: boolean;
+  chartData?: any;
+  analysis?: {
+    goal: string;
+    output: string;
+    error?: string;
+  };
 }
 
 export interface CellUpdate {
