@@ -70,7 +70,7 @@ const ChatBox = ({
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center bg-white z-10">
         <div>
-          <h2 className="font-semibold text-gray-800">AI Assistant</h2>
+          <h2 className="font-semibold text-gray-800">Probly</h2>
           <p className="text-xs text-gray-500">
             Ask me about spreadsheet formulas
           </p>

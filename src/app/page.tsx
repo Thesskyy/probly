@@ -265,7 +265,7 @@ const SpreadsheetApp = () => {
       {/* Title bar */}
       <div className="h-10 border-b border-gray-200 bg-white flex items-center justify-between px-4">
         <div className="text-sm font-medium text-gray-600">
-          Magic Spreadsheet
+          Probly
         </div>
         <div className="flex items-center gap-2"></div>
       </div>
