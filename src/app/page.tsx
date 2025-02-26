@@ -1,17 +1,20 @@
 "use client";
-import { MessageCircle } from "lucide-react";
-import dynamic from "next/dynamic";
-import ChatBox from "@/components/ChatBox";
-import { useState, useEffect, useRef } from "react";
+
+import {} from "@/lib/file/import";
+
+import { CellUpdate, ChatMessage } from "@/types/api";
 import {
   SpreadsheetProvider,
   useSpreadsheet,
 } from "@/context/SpreadsheetContext";
-import { CellUpdate, ChatMessage } from "@/types/api";
+import { useEffect, useRef, useState } from "react";
+
+import ChatBox from "@/components/ChatBox";
+import { MessageCircle } from "lucide-react";
 import type { SpreadsheetRef } from "@/components/Spreadsheet";
-import path from "path";
-import {} from "@/lib/file/import";
+import dynamic from "next/dynamic";
 import { fileExport } from "@/lib/file/export";
+import path from "path";
 import { prepareChatHistory } from "@/utils/chatUtils";
 
 const Spreadsheet = dynamic(() => import("@/components/Spreadsheet"), {
@@ -156,7 +159,10 @@ const SpreadsheetApp = () => {
                         ...msg,
                         response: accumulatedResponse,
                         updates: updates,
+                        chartData: chartData,
+                        analysis: parsedData?.analysis,
                         streaming: parsedData.streaming ?? false,
+                        status: updates || chartData ? "pending" : null,
                       }
                     : msg,
                 ),
@@ -181,14 +187,16 @@ const SpreadsheetApp = () => {
                 ...msg,
                 response: accumulatedResponse,
                 updates: updates,
+                chartData: chartData,
+                analysis: parsedData?.analysis,
                 streaming: false,
                 status: updates || chartData ? "pending" : null,
               }
             : msg,
         ),
       );
-    } catch (error) {
-      if (error.name === "AbortError") {
+    } catch (error: unknown) {
+      if ((error as Error).name === "AbortError") {
         console.log("Request Aborted");
         // Handle abort case
         setChatHistory((prev) =>

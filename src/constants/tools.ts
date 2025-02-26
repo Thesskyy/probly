@@ -1,6 +1,8 @@
-export const tools = [
+import type { ChatCompletionTool } from "openai/resources/chat/completions";
+
+export const tools: ChatCompletionTool[] = [
   {
-    type: "function" as const,
+    type: "function",
     function: {
       name: "set_spreadsheet_cells",
       description: "Set values to specified spreadsheet cells",
@@ -18,15 +20,14 @@ export const tools = [
               required: ["formula", "target"],
               additionalProperties: false,
             },
-            strict: true,
           },
         },
+        required: ["cellUpdates"],
       },
-      required: ["cellUpdates"],
     },
   },
   {
-    type: "function" as const,
+    type: "function",
     function: {
       name: "create_chart",
       description:
@@ -82,7 +83,7 @@ export const tools = [
               "Start cell reference (e.g., 'A1') where the results should begin.",
           },
         },
-        required: ["analysis_goal", "suggested_code", "cell_updates"],
+        required: ["analysis_goal", "suggested_code", "start_cell"],
       },
     },
   },
