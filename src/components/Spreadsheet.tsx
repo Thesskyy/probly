@@ -302,7 +302,7 @@ const Spreadsheet = forwardRef<SpreadsheetRef, SpreadsheetProps>(
                 </div>
               ) : (
                 <div className="text-xs text-gray-500 py-2">
-                  No charts available. Create a chart using the AI assistant.
+                  No charts available, ask Probly to create one.
                 </div>
               )}
             </div>
