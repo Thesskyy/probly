@@ -1,9 +1,9 @@
-import { Import, File, BarChart3 } from "lucide-react";
+import { BarChart3, File, Import } from "lucide-react";
 
 interface SpreadsheetToolbarProps {
   onImport: () => void;
   onExport: () => void;
-  onChart: () => void;
+  onChart?: () => void;
 }
 
 const SpreadsheetToolbar: React.FC<SpreadsheetToolbarProps> = ({
@@ -28,13 +28,16 @@ const SpreadsheetToolbar: React.FC<SpreadsheetToolbarProps> = ({
         >
           <File size={18} />
         </button>
-        <button
-          onClick={onChart}
-          className="p-1 rounded hover:bg-gray-200 transition-colors"
-          title="Chart"
-        >
-          <BarChart3 size={18} />
-        </button>
+        {onChart && (
+          <button
+            onClick={onChart}
+            className="p-1 rounded hover:bg-gray-200 transition-colors flex items-center"
+            title="Manage Charts"
+          >
+            <BarChart3 size={18} />
+            <span className="ml-1 text-xs">Charts</span>
+          </button>
+        )}
       </div>
     </div>
   );
