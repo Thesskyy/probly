@@ -2,7 +2,7 @@
 
 An AI-powered spreadsheet application that combines spreadsheet functionality with Python data analysis capabilities.
 
-![Probly Screenshot](docs/docs/assets/images/probly.png)
+![Probly Screenshot](docs/docs/assets/images/probly-screenshot.png)
 
 ## Features
 
