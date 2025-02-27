@@ -13,7 +13,7 @@ This guide will help you get up and running with Probly, the AI-powered spreadsh
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/probly.git
+   git clone https://github.com/PragmaticMachineLearning/probly.git
    cd probly
    ```
 
