@@ -1,0 +1,46 @@
+/* Enhanced table styling */
+.md-typeset table:not([class]) {
+  font-size: 0.9rem;
+  border-radius: 0.2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,.05);
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.md-typeset table:not([class]) tr:nth-child(even) {
+  background-color: var(--md-code-bg-color);
+}
+
+.md-typeset table:not([class]) tr:hover {
+  background-color: rgba(0,0,0,.035);
+}
+
+/* For dark mode */
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) tr:hover {
+  background-color: rgba(255,255,255,.035);
+}
+
+/* Property tables with better formatting */
+.property-table th:first-child {
+  width: 25%;
+}
+
+.property-table th:nth-child(2) {
+  width: 25%;
+}
+
+/* Method tables with better formatting */
+.method-table th:first-child {
+  width: 30%;
+}
+
+/* API tables */
+.api-table code {
+  white-space: nowrap;
+} 
