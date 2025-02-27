@@ -1,6 +1,9 @@
 # Probly
 
-An AI powered spreadsheet tool that combines spreadsheet functionality with Python data analysis capabilities.
+An AI powered spreadsheet tool with a minimalist approach that combines spreadsheet functionality with Python data analysis capabilities.
+
+![Probly Screenshot](../assets/images/probly-screenshot.png){width=800}
+
 
 ## Key Features
 

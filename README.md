@@ -66,7 +66,7 @@ npm run build
 
 ## Documentation
 
-For comprehensive documentation, visit the [Probly Documentation](https://pragmaticmachinelearning.github.io/probly/).
+For comprehensive documentation, visit the [Probly Documentation](https://probly-ai.readthedocs.io/en/latest/).
 
 ## License
 
