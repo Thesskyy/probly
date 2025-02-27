@@ -1,15 +1,29 @@
 # Probly
 
-A Next.js application with an Excel-like interface using Handsontable.
+An AI-powered spreadsheet application that combines spreadsheet functionality with Python data analysis capabilities.
+
+![Probly Screenshot](docs/docs/assets/images/screenshot.png)
+
+## Features
+
+- **Interactive Spreadsheet**: Full-featured spreadsheet with formula support
+- **Python Analysis**: Run Python code directly on your spreadsheet data
+- **Data Visualization**: Create charts and visualizations from your data
+- **AI-Powered**: Get intelligent suggestions and automated analysis
 
 ## Requirements
 
 - Node.js 18 or higher
 - npm or yarn
+- A modern web browser (Chrome, Firefox, Edge, or Safari)
 
 ## Installation and Setup
 
 1. Clone the repository
+   ```bash
+   git clone https://github.com/PragmaticMachineLearning/probly.git
+   cd probly
+   ```
 
 2. Install dependencies:
    ```bash
@@ -35,21 +49,25 @@ Production build:
 npm run build
 ```
 
+## Quick Start
+
+1. Start the application and open it in your browser
+2. Import data using the import button or start with a blank spreadsheet
+3. Open the AI chat with `Ctrl+Shift+/` to start interacting with Probly
+4. Ask questions about your data or request analysis
+
 ## Tech Stack
 
-- Next.js 14
-- TypeScript
-- OpenAI API
-- Handsontable
+- **Frontend**: Next.js 14, TypeScript, React
+- **Spreadsheet**: Handsontable, HyperFormula
+- **Python Runtime**: Pyodide (WebAssembly)
+- **LLM**: OpenAI API
+- **Visualization**: ECharts
 
-## Development Roadmap
-- [x] Add a chat history
-- [x] Add visualizations / graphing
-- [x] Add excel import / export
-- [ ] Try to respect formatting on import
-- [x] Add an accept / reject button on the chat response prior to applying it to the spreadsheet
-- [ ] Other kinds of operations (hide rows where, hide columns where, sort table by attribute, etc.)
-- [ ] Support for multiple sheets (or select sheet to use on import)
-- [ ] Make more of the top toolbar buttons work (first check out of the box hands on table functionality)
-- [x] Keybindings / hotkeys
-- [x] Hide chat window with expand / collapse button
+## Documentation
+
+For comprehensive documentation, visit the [Probly Documentation](https://pragmaticmachinelearning.github.io/probly/).
+
+## License
+
+[MIT License](LICENSE)

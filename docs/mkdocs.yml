@@ -1,0 +1,67 @@
+site_name: Probly
+site_description: A powerful spreadsheet tool with Python analysis capabilities
+site_author: Your Name
+repo_url: https://github.com/PragmaticMachineLearning/probly
+
+theme:
+  name: material
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+    - content.tooltips
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - tables
+  - attr_list
+  - md_in_html
+  - def_list
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Features:
+      - Overview: features/overview.md
+      - Spreadsheet: features/spreadsheet.md
+      - Python Analysis: features/python-analysis.md
+      - Charts: features/charts.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Pyodide Integration: architecture/pyodide.md
+  - API Reference: api-reference.md
+  - Contributing: contributing.md
