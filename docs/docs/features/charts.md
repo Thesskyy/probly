@@ -2,6 +2,8 @@
 
 Probly provides powerful charting capabilities to visualize your spreadsheet data.
 
+![Probly Charts](../assets/images/probly-charts.png)
+
 ## Available Chart Types
 
 - **Bar Charts**: Compare values across categories
