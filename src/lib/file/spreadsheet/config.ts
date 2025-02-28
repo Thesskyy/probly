@@ -1,6 +1,6 @@
-import { HyperFormula } from "hyperformula";
-
 import * as XLSX from "xlsx";
+
+import { HyperFormula } from "hyperformula";
 
 // Helper function to convert HyperFormula cell address to string format
 const cellAddressToString = (address: any) => {
@@ -69,18 +69,31 @@ const calculateCellValue = (
       const existingValue = cellValues.get(cellRef);
       if (existingValue) {
         // set up data in hyperformula if the value is already provided, rather than attempting to perform an evaluation
-        hyperformulaInstance.setCellContents(cellAddress, existingValue);
+        hyperformulaInstance.setCellContents({
+          col: cellAddress.c,
+          row: cellAddress.r,
+          sheet: 0
+        }, existingValue);
       }
 
-      // Parse hyperformula formula
-      const ast = hyperformulaInstance.parse(formula);
-      if (ast.result === "ERROR") {
-        console.error("HyperFormula parse error:", ast.error);
-        return "#ERROR";
-      }
+      // // Parse hyperformula formula
+      // const ast = hyperformulaInstance.parseFormula(formula, {
+      //   col: cellAddress.c,
+      //   row: cellAddress.r,
+      //   sheet: 0
+      // });
+
+      // if (ast.error) {
+      //   console.error("HyperFormula parse error:", ast.error);
+      //   return "#ERROR";
+      // }
 
       // Calculate using HyperFormula
-      const calculatedValue = hyperformulaInstance.getCellValue(cellAddress);
+      const calculatedValue = hyperformulaInstance.getCellValue({
+        col: cellAddress.c,
+        row: cellAddress.r,
+        sheet: 0
+      });
       return calculatedValue;
       // return hyperformulaInstance.getCellValue(cellAddress);
     }

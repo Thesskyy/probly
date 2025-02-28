@@ -41,17 +41,26 @@ export function formatSpreadsheetData(data: any[][]): string {
  * @returns Promise<string> - Structured CSV-like output with headers
  */
 export async function structureAnalysisOutput(rawOutput: string, analysisGoal: string): Promise<string> {
+  // First, clean up the raw output in case it already contains backticks
+  const cleanedRawOutput = rawOutput
+    .replace(/```[\s\S]*?```/g, '') // Remove code blocks with content
+    .replace(/```/g, '')            // Remove any remaining backticks
+    .trim();                        // Remove extra whitespace
+  
   const messages: ChatCompletionMessageParam[] = [
     {
       role: "system",
       content: `Convert the following analysis output into a clean tabular format. 
       Each row should be comma-separated values, with the first row being headers.
       Ensure numbers are properly formatted and aligned.
-      The output should be ready to insert into a spreadsheet.`
+      The output should be ready to insert into a spreadsheet.
+      
+      IMPORTANT: Do not use any markdown formatting or code blocks in your response.
+      Just return plain text with comma-separated values.`
     },
     {
       role: "user", 
-      content: `Analysis Goal: ${analysisGoal}\n\nRaw Output:\n${rawOutput}\n\nConvert this into comma-separated rows with headers.`
+      content: `Analysis Goal: ${analysisGoal}\n\nRaw Output:\n${cleanedRawOutput}\n\nConvert this into comma-separated rows with headers.`
     }
   ];
 
@@ -61,7 +70,15 @@ export async function structureAnalysisOutput(rawOutput: string, analysisGoal: s
     temperature: 0.1,
   });
 
-  return completion.choices[0]?.message?.content || '';
+  // Get the content from the completion, or empty string if undefined
+  let result = completion.choices[0]?.message?.content || '';
+  
+  // Remove any code blocks (text between triple backticks) and any remaining backticks
+  result = result.replace(/```[\s\S]*?```/g, '') // Remove code blocks with content
+           .replace(/```/g, '')                  // Remove any remaining backticks
+           .trim();                              // Remove extra whitespace
+  
+  return result;
 }
 
 /**

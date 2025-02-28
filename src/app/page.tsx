@@ -124,6 +124,7 @@ const SpreadsheetApp = () => {
       let accumulatedResponse = "";
       let updates: CellUpdate[] | undefined;
       let chartData: any | undefined;
+      let lastParsedData: any | undefined;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -137,7 +138,7 @@ const SpreadsheetApp = () => {
             const jsonData = event.substring(6);
             try {
               const parsedData = JSON.parse(jsonData);
-
+              lastParsedData = parsedData;
               if (parsedData.response) {
                 if (parsedData.streaming) {
                   // For streaming content, append to the existing response
@@ -188,7 +189,7 @@ const SpreadsheetApp = () => {
                 response: accumulatedResponse,
                 updates: updates,
                 chartData: chartData,
-                analysis: parsedData?.analysis,
+                analysis: lastParsedData?.analysis,
                 streaming: false,
                 status: updates || chartData ? "pending" : null,
               }

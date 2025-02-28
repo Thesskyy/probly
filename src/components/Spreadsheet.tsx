@@ -39,7 +39,7 @@ interface ChartInfo {
 const Spreadsheet = forwardRef<SpreadsheetRef, SpreadsheetProps>(
   ({ onDataChange, initialData }, ref) => {
     const spreadsheetRef = useRef<HTMLDivElement>(null);
-    const hotInstanceRef = useRef<Handsontable | null>(null);
+    const hotInstanceRef = useRef<any>(null);
     const { formulaQueue, clearFormula, setFormulas } = useSpreadsheet();
     const [currentData, setCurrentData] = useState(
       initialData || [
