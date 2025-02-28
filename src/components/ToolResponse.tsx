@@ -50,7 +50,9 @@ const ToolResponse: React.FC<ToolResponseProps> = ({
       const col = match[1];
       const row = parseInt(match[2]);
       return { col, row, formula: update.formula, target: update.target };
-    }).filter(Boolean);
+    }).filter(Boolean) as { col: string; row: number; formula: string; target: string }[];
+    
+    if (cellInfo.length === 0) return null;
     
     // Find the range of rows and columns
     const minRow = Math.min(...cellInfo.map(cell => cell.row));

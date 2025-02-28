@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: false,
-  // other configurations...
+  reactStrictMode: true,
+  output: "standalone",
+  experimental: {
+    serverComponentsExternalPackages: ["sharp", "canvas"],
+  },
   images: {
     unoptimized: true,
   },
