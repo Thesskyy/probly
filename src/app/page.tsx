@@ -10,7 +10,8 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 import ChatBox from "@/components/ChatBox";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, BookOpen } from "lucide-react";
+import PromptLibrary from "@/components/PromptLibrary";
 import type { SpreadsheetRef } from "@/components/Spreadsheet";
 import dynamic from "next/dynamic";
 import { fileExport } from "@/lib/file/export";
@@ -31,14 +32,22 @@ const SpreadsheetApp = () => {
   const { setFormulas, setChartData } = useSpreadsheet();
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState(false);
+  const [message, setMessage] = useState("");
   const spreadsheetRef = useRef<SpreadsheetRef>(null);
   const abortController = useRef<AbortController | null>(null);
 
-  // Keyboard shortcut for chat toggle
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // Toggle chat with Ctrl+Shift+?
       if (e.ctrlKey && e.shiftKey && e.key === "?") {
         setIsChatOpen((prev) => !prev);
+      }
+      
+      // Toggle prompt library with Ctrl+Shift+L
+      if (e.ctrlKey && e.shiftKey && e.key === "L") {
+        setIsPromptLibraryOpen((prev) => !prev);
       }
     };
     window.addEventListener("keydown", handleKeyPress);
@@ -261,6 +270,12 @@ const SpreadsheetApp = () => {
     setSpreadsheetData(data);
   };
 
+  const handleSelectPrompt = (promptText: string) => {
+    setMessage(promptText);
+    setIsPromptLibraryOpen(false);
+    setIsChatOpen(true);
+  };
+
   return (
     <main className="h-screen w-screen flex flex-col bg-gray-50">
       {/* Title bar */}
@@ -295,21 +310,41 @@ const SpreadsheetApp = () => {
               clearHistory={handleClearHistory}
               onAccept={handleAccept}
               onReject={handleReject}
+              message={message}
+              setMessage={setMessage}
             />
           </div>
         </div>
       </div>
 
+      {/* Prompt Library Modal */}
+      <PromptLibrary 
+        isOpen={isPromptLibraryOpen}
+        onClose={() => setIsPromptLibraryOpen(false)}
+        onSelectPrompt={handleSelectPrompt}
+      />
+
       {/* Footer */}
       <div className="h-12 border-t border-gray-200 bg-white flex items-center justify-between px-4">
-        <div className="flex items-center gap-2"></div>
-        <button
-          onClick={() => setIsChatOpen((prev) => !prev)}
-          className="p-2 rounded hover:bg-gray-100 transition-colors"
-          title="Toggle Chat (Ctrl+Shift+/)"
-        >
-          <MessageCircle size={20} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Empty or for other controls */}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsPromptLibraryOpen(true)}
+            className="p-2 rounded hover:bg-gray-100 transition-colors"
+            title="Prompt Library (Ctrl+Shift+L)"
+          >
+            <BookOpen size={20} />
+          </button>
+          <button
+            onClick={() => setIsChatOpen((prev) => !prev)}
+            className="p-2 rounded hover:bg-gray-100 transition-colors"
+            title="Toggle Chat (Ctrl+Shift+?)"
+          >
+            <MessageCircle size={20} />
+          </button>
+        </div>
       </div>
     </main>
   );

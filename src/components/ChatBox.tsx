@@ -11,6 +11,8 @@ interface ChatBoxProps {
   onReject: (messageId: string) => void;
   chatHistory: ChatMessage[];
   clearHistory: () => void;
+  message: string;
+  setMessage: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const ChatBox = ({
@@ -20,10 +22,12 @@ const ChatBox = ({
   onReject,
   chatHistory,
   clearHistory,
+  message,
+  setMessage,
 }: ChatBoxProps) => {
-  const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -40,6 +44,15 @@ const ChatBox = ({
     }
   }, [chatHistory]);
 
+  // Focus and adjust textarea when message changes
+  useEffect(() => {
+    if (message && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [message]);
+
   const handleSend = async () => {
     if (message.trim() || isLoading) {
       if (isLoading) {
@@ -47,11 +60,11 @@ const ChatBox = ({
         setIsLoading(false);
         return;
       }
-      const currentMessage = message;
+      const messageToSend = message;
       setMessage("");
       setIsLoading(true);
       try {
-        await onSend(currentMessage);
+        await onSend(messageToSend);
       } catch (error) {
         console.error("Error details:", error);
       }
@@ -63,6 +76,13 @@ const ChatBox = ({
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(e.target.value);
+    // Auto-resize textarea
+    e.target.style.height = 'auto';
+    e.target.style.height = `${e.target.scrollHeight}px`;
   };
 
   return (
@@ -85,7 +105,7 @@ const ChatBox = ({
       </div>
 
       {/* Chat History */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 chat-message-container">
         {chatHistory.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-2">
             <p className="text-sm">No messages yet</p>
@@ -147,8 +167,9 @@ const ChatBox = ({
       <div className="p-4 bg-white border-t border-gray-200">
         <div className="flex gap-2 items-end relative">
           <textarea
+            ref={textareaRef}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
             className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none min-h-[80px] bg-white text-gray-800 transition-all duration-200"
             placeholder="Type your message..."
