@@ -10,6 +10,7 @@ An AI-powered spreadsheet application that combines spreadsheet functionality wi
 - **Python Analysis**: Run Python code directly in your browser using WebAssembly
 - **Data Visualization**: Create charts and visualizations from your data
 - **AI-Powered**: Get intelligent suggestions and automated analysis
+- **Prompt Library**: Access predefined prompts or save your own for quick reuse
 
 ## Architecture
 
@@ -91,13 +92,15 @@ If you prefer to run Probly without Docker:
 3. Open the AI chat with the keyboard shortcut:
    - **Windows/Linux**: `Ctrl+Shift+?`
    - **Mac**: `⌘+Shift+?` (Command+Shift+?)
-4. Ask questions about your data or request analysis
+4. Access the prompt library to use predefined prompts or save your own
+5. Ask questions about your data or request analysis
 
 ## Keyboard Shortcuts
 
 | Action | Windows/Linux | Mac |
 |--------|--------------|-----|
 | Toggle AI Chat | `Ctrl+Shift+?` | `⌘+Shift+?` (Command+Shift+?) |
+| Open Prompt Library | `Ctrl+Shift+L` | `⌘+Shift+L` (Command+Shift+L) |
 
 ## Advanced Docker Options
 
