@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, X, Save, Trash2 } from 'lucide-react';
+import { Search, Plus, X, Save, Trash2, Edit2 } from 'lucide-react';
 import { predefinedPrompts } from '@/constants/prompts';
 
 interface Prompt {
@@ -20,6 +20,7 @@ const PromptLibrary: React.FC<PromptLibraryProps> = ({ isOpen, onClose, onSelect
   const [newPromptTitle, setNewPromptTitle] = useState('');
   const [newPromptContent, setNewPromptContent] = useState('');
   const [isAddingPrompt, setIsAddingPrompt] = useState(false);
+  const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -75,17 +76,29 @@ const PromptLibrary: React.FC<PromptLibraryProps> = ({ isOpen, onClose, onSelect
   const handleSavePrompt = () => {
     if (!newPromptTitle.trim() || !newPromptContent.trim()) return;
     
-    const newPrompt: Prompt = {
-      id: Date.now().toString(),
-      title: newPromptTitle.trim(),
-      content: newPromptContent.trim()
-    };
-    
-    const updatedPrompts = [...prompts, newPrompt];
-    setPrompts(updatedPrompts);
+    if (editingPromptId) {
+      // Update existing prompt
+      const updatedPrompts = prompts.map(prompt => 
+        prompt.id === editingPromptId 
+          ? { ...prompt, title: newPromptTitle.trim(), content: newPromptContent.trim() } 
+          : prompt
+      );
+      setPrompts(updatedPrompts);
+      setEditingPromptId(null);
+    } else {
+      // Create new prompt
+      const newPrompt: Prompt = {
+        id: Date.now().toString(),
+        title: newPromptTitle.trim(),
+        content: newPromptContent.trim()
+      };
+      
+      const updatedPrompts = [...prompts, newPrompt];
+      setPrompts(updatedPrompts);
+    }
     
     // Save user prompts to localStorage (excluding predefined ones)
-    const userPrompts = updatedPrompts.filter(
+    const userPrompts = prompts.filter(
       prompt => !predefinedPrompts.some(p => p.id === prompt.id)
     );
     localStorage.setItem('userPrompts', JSON.stringify(userPrompts));
@@ -94,6 +107,13 @@ const PromptLibrary: React.FC<PromptLibraryProps> = ({ isOpen, onClose, onSelect
     setNewPromptTitle('');
     setNewPromptContent('');
     setIsAddingPrompt(false);
+  };
+
+  const handleEditPrompt = (prompt: Prompt) => {
+    setNewPromptTitle(prompt.title);
+    setNewPromptContent(prompt.content);
+    setEditingPromptId(prompt.id);
+    setIsAddingPrompt(true);
   };
 
   const handleDeletePrompt = (id: string) => {
@@ -113,20 +133,29 @@ const PromptLibrary: React.FC<PromptLibraryProps> = ({ isOpen, onClose, onSelect
     localStorage.setItem('userPrompts', JSON.stringify(userPrompts));
   };
 
+  const handleCancelEdit = () => {
+    setNewPromptTitle('');
+    setNewPromptContent('');
+    setEditingPromptId(null);
+    setIsAddingPrompt(false);
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div 
         ref={modalRef}
-        className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden"
+        className="bg-white rounded-xl w-full max-w-2xl h-[80vh] flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-800">Prompt Library</h2>
-          <button 
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-800">
+            {editingPromptId ? 'Edit Prompt' : 'Prompt Library'}
+          </h2>
+          <button
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
           >
             <X size={20} />
           </button>
@@ -147,15 +176,24 @@ const PromptLibrary: React.FC<PromptLibraryProps> = ({ isOpen, onClose, onSelect
               />
             </div>
             <button
-              onClick={() => setIsAddingPrompt(!isAddingPrompt)}
+              onClick={() => {
+                if (isAddingPrompt && !editingPromptId) {
+                  setIsAddingPrompt(false);
+                } else {
+                  setIsAddingPrompt(true);
+                  setEditingPromptId(null);
+                  setNewPromptTitle('');
+                  setNewPromptContent('');
+                }
+              }}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
             >
-              {isAddingPrompt ? <X size={18} /> : <Plus size={18} />}
-              {isAddingPrompt ? 'Cancel' : 'Add Prompt'}
+              {isAddingPrompt && !editingPromptId ? <X size={18} /> : <Plus size={18} />}
+              {isAddingPrompt && !editingPromptId ? 'Cancel' : 'Add Prompt'}
             </button>
           </div>
           
-          {/* Add Prompt Form */}
+          {/* Add/Edit Prompt Form */}
           {isAddingPrompt && (
             <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
               <div className="mb-3">
@@ -178,14 +216,25 @@ const PromptLibrary: React.FC<PromptLibraryProps> = ({ isOpen, onClose, onSelect
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
               </div>
-              <button
-                onClick={handleSavePrompt}
-                disabled={!newPromptTitle.trim() || !newPromptContent.trim()}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                <Save size={18} />
-                Save Prompt
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSavePrompt}
+                  disabled={!newPromptTitle.trim() || !newPromptContent.trim()}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  <Save size={18} />
+                  {editingPromptId ? 'Update Prompt' : 'Save Prompt'}
+                </button>
+                {editingPromptId && (
+                  <button
+                    onClick={handleCancelEdit}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
+                  >
+                    <X size={18} />
+                    Cancel
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -213,15 +262,26 @@ const PromptLibrary: React.FC<PromptLibraryProps> = ({ isOpen, onClose, onSelect
                         Use
                       </button>
                       {!predefinedPrompts.some(p => p.id === prompt.id) && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeletePrompt(prompt.id);
-                          }}
-                          className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditPrompt(prompt);
+                            }}
+                            className="text-gray-500 hover:text-gray-700 transition-colors"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePrompt(prompt.id);
+                            }}
+                            className="text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
