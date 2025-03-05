@@ -23,14 +23,29 @@ export function formatSpreadsheetData(data: any[][]): string {
   };
 
   return data.reduce((acc, row, rowIndex) => {
-    return (
-      acc +
-      row.reduce((rowAcc, cell, colIndex) => {
-        const cellRef = `${getColumnRef(colIndex)}${rowIndex + 1}`;
-        return rowAcc + `<${cellRef}>${cell}</${cellRef}>`;
-      }, "") +
-      "\n"
-    );
+    // check empty row（all elements are null or undefined or empty string）
+    const hasContent = row.some(cell => cell !== null && cell !== undefined && cell !== "");
+    if (!hasContent) return acc; // skip the empty row
+
+    // find last empty element index
+    let lastNonEmptyIndex = row.length - 1;
+    while (lastNonEmptyIndex >= 0 &&
+    (row[lastNonEmptyIndex] === null ||
+        row[lastNonEmptyIndex] === undefined ||
+        row[lastNonEmptyIndex] === "")) {
+      lastNonEmptyIndex--;
+    }
+
+    if (lastNonEmptyIndex < 0) return acc;
+
+    const rowContent = row.slice(0, lastNonEmptyIndex + 1).reduce((rowAcc, cell, colIndex) => {
+      if (cell === null || cell === undefined || cell === "") return rowAcc;
+
+      const cellRef = `${getColumnRef(colIndex)}${rowIndex + 1}`;
+      return rowAcc + `<${cellRef}>${cell}</${cellRef}>`;
+    }, "");
+
+    return acc + rowContent + "\n";
   }, "");
 }
 
