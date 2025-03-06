@@ -13,24 +13,45 @@ const openai = new OpenAI({
 export function formatSpreadsheetData(data: any[][]): string {
   if (!data || !Array.isArray(data)) return "";
 
-  const getColumnRef = (index: number): string => {
+  // Step 1: Compute max columns to precompute column references
+  const maxColumns = Math.max(...data.map(row => row.length), 0);
+  const columnRefs = Array.from({ length: maxColumns }, (_, i) => getColumnRef(i));
+
+  function getColumnRef(index: number): string {
     let columnRef = "";
     while (index >= 0) {
       columnRef = String.fromCharCode((index % 26) + 65) + columnRef;
       index = Math.floor(index / 26) - 1;
     }
     return columnRef;
-  };
+  }
+  
+  function isEmpty(cell: any): boolean {
+    return cell === null || cell === undefined || cell === "";
+  }
 
+  // Step 2: Process data efficiently
   return data.reduce((acc, row, rowIndex) => {
-    return (
-      acc +
-      row.reduce((rowAcc, cell, colIndex) => {
-        const cellRef = `${getColumnRef(colIndex)}${rowIndex + 1}`;
-        return rowAcc + `<${cellRef}>${cell}</${cellRef}>`;
-      }, "") +
-      "\n"
-    );
+    // Check if the row is completely empty
+    if (row.every(isEmpty)) return acc;
+
+    // Find the last non-empty cell index
+    let lastNonEmptyIndex = row.length - 1;
+    while (lastNonEmptyIndex >= 0 && isEmpty(row[lastNonEmptyIndex])) {
+      lastNonEmptyIndex--;
+    }
+
+    if (lastNonEmptyIndex < 0) return acc; // Skip if no valid content
+
+    // Format the row
+    const rowContent = row.slice(0, lastNonEmptyIndex + 1).reduce((rowAcc, cell, colIndex) => {
+      if (isEmpty(cell)) return rowAcc;
+
+      const cellRef = `${columnRefs[colIndex]}${rowIndex + 1}`;
+      return rowAcc + `<${cellRef}>${cell}</${cellRef}>`;
+    }, "");
+
+    return acc + rowContent + "\n";
   }, "");
 }
 
