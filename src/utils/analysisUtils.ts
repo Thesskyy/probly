@@ -32,6 +32,7 @@ export function formatSpreadsheetData(data: any[][]): string {
 
   // Step 2: Process data efficiently
   return data.reduce((acc, row, rowIndex) => {
+
     // Check if the row is completely empty
     if (row.every(isEmpty)) return acc;
 
@@ -48,6 +49,7 @@ export function formatSpreadsheetData(data: any[][]): string {
       if (isEmpty(cell)) return rowAcc;
 
       const cellRef = `${columnRefs[colIndex]}${rowIndex + 1}`;
+
       return rowAcc + `<${cellRef}>${cell}</${cellRef}>`;
     }, "");
 
