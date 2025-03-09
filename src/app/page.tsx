@@ -1,7 +1,7 @@
 "use client";
 
 import {} from "@/lib/file/import";
-
+import LoginPage from "@/components/LoginPage";
 import { CellUpdate, ChatMessage } from "@/types/api";
 import {
   SpreadsheetProvider,
@@ -44,7 +44,7 @@ const SpreadsheetApp = () => {
       if (e.ctrlKey && e.shiftKey && e.key === "?") {
         setIsChatOpen((prev) => !prev);
       }
-      
+
       // Toggle prompt library with Ctrl+Shift+L
       if (e.ctrlKey && e.shiftKey && e.key === "L") {
         setIsPromptLibraryOpen((prev) => !prev);
@@ -77,7 +77,7 @@ const SpreadsheetApp = () => {
           parsed.map((msg: any) => ({
             ...msg,
             timestamp: new Date(msg.timestamp),
-          })),
+          }))
         );
       } catch (error) {
         console.error("Error loading chat history:", error);
@@ -174,8 +174,8 @@ const SpreadsheetApp = () => {
                         streaming: parsedData.streaming ?? false,
                         status: updates || chartData ? "pending" : null,
                       }
-                    : msg,
-                ),
+                    : msg
+                )
               );
 
               // Update chart if present
@@ -202,8 +202,8 @@ const SpreadsheetApp = () => {
                 streaming: false,
                 status: updates || chartData ? "pending" : null,
               }
-            : msg,
-        ),
+            : msg
+        )
       );
     } catch (error: unknown) {
       if ((error as Error).name === "AbortError") {
@@ -217,8 +217,8 @@ const SpreadsheetApp = () => {
                   response: msg.response + "\n[Generation stopped]",
                   streaming: false,
                 }
-              : msg,
-          ),
+              : msg
+          )
         );
       } else {
         // Handle other errors
@@ -235,8 +235,8 @@ const SpreadsheetApp = () => {
                   }`,
                   streaming: false,
                 }
-              : msg,
-          ),
+              : msg
+          )
         );
       }
     } finally {
@@ -248,16 +248,16 @@ const SpreadsheetApp = () => {
     setFormulas(updates);
     setChatHistory((prev) =>
       prev.map((msg) =>
-        msg.id === messageId ? { ...msg, status: "accepted" } : msg,
-      ),
+        msg.id === messageId ? { ...msg, status: "accepted" } : msg
+      )
     );
   };
 
   const handleReject = (messageId: string) => {
     setChatHistory((prev) =>
       prev.map((msg) =>
-        msg.id === messageId ? { ...msg, status: "rejected" } : msg,
-      ),
+        msg.id === messageId ? { ...msg, status: "rejected" } : msg
+      )
     );
   };
 
@@ -280,9 +280,7 @@ const SpreadsheetApp = () => {
     <main className="h-screen w-screen flex flex-col bg-gray-50">
       {/* Title bar */}
       <div className="h-10 border-b border-gray-200 bg-white flex items-center justify-between px-4">
-        <div className="text-sm font-medium text-gray-600">
-          Probly
-        </div>
+        <div className="text-sm font-medium text-gray-600">Probly</div>
         <div className="flex items-center gap-2"></div>
       </div>
 
@@ -318,7 +316,7 @@ const SpreadsheetApp = () => {
       </div>
 
       {/* Prompt Library Modal */}
-      <PromptLibrary 
+      <PromptLibrary
         isOpen={isPromptLibraryOpen}
         onClose={() => setIsPromptLibraryOpen(false)}
         onSelectPrompt={handleSelectPrompt}
@@ -351,6 +349,12 @@ const SpreadsheetApp = () => {
 };
 
 const HomePage = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <SpreadsheetProvider>
       <SpreadsheetApp />
